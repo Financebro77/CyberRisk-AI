@@ -45,6 +45,11 @@ from cyberrisk.agent.risk_explanation import (
     explain_risk_measures,
     explain_var,
 )
+from cyberrisk.agent.scenario_contribution import (
+    ScenarioContribution,
+    analyze_scenario_contribution,
+    scenario_contribution_summary,
+)
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief
 from cyberrisk.agent.sensitivity_tools import (
     ControlImprovementResult,
@@ -67,8 +72,10 @@ __all__ = [
     "ESExplanation",
     "LIMITATIONS",
     "ModelMechanics",
+    "ScenarioContribution",
     "VarExplanation",
     "analyse_insurance_structure",
+    "analyze_scenario_contribution",
     "append_disclosure",
     "assess_company_risk",
     "build_factor_scores",
@@ -82,4 +89,5 @@ __all__ = [
     "generate_risk_report",
     "run_control_improvement_scenario",
     "run_loss_simulation",
+    "scenario_contribution_summary",
 ]

@@ -442,6 +442,12 @@ def run_loss_simulation(brief: CompanyBrief, n_years: int | None = None) -> dict
     aal = m.aal_by_scenario
     ordered = sorted(aal.items(), key=lambda kv: kv[1], reverse=True)
     contrib = m.scenario_contribution()
+    # Scenario contribution analysis with model-linked drivers (frequency /
+    # severity drivers, recommended controls) for the agent's explanation.
+    from cyberrisk.agent.scenario_contribution import analyze_scenario_contribution
+
+    contrib_analysis = analyze_scenario_contribution(brief, n_years=n_years)
+    contrib_with_drivers = contrib_analysis.get("scenarios", []) if contrib_analysis.get("status") == "ok" else []
     return {
         "status": "ok",
         "firm_name": scored.firm_name,
@@ -460,6 +466,7 @@ def run_loss_simulation(brief: CompanyBrief, n_years: int | None = None) -> dict
         "loss_distribution": quantiles,
         "aal_by_scenario": dict(ordered),
         "scenario_contribution": {k: contrib[k] for k, _ in ordered},
+        "scenario_contribution_detail": contrib_with_drivers,
     }
 
 

@@ -160,6 +160,22 @@ class CyberRiskAgent:
 
         return _explain(var_99, es_99, var_95, es_95, loss_definition)
 
+    @staticmethod
+    def scenario_contribution(
+        brief: CompanyBrief,
+        n_years: int | None = None,
+    ) -> dict:
+        """Return the per-scenario EAL contribution with model-linked drivers.
+
+        Each scenario carries its contribution share, AAL, frequency drivers,
+        severity drivers, and recommended controls -- all derived from model
+        outputs (simulated loss shares, the brief's factor scores, and the
+        scenario config).  Pass-through for callers / tests.
+        """
+        from cyberrisk.agent.scenario_contribution import analyze_scenario_contribution
+
+        return analyze_scenario_contribution(brief, n_years)
+
     # ------------------------------------------------------------------
     # Loop internals
     # ------------------------------------------------------------------
