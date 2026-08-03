@@ -1,0 +1,175 @@
+# =====================================================================
+# Benchmark client profiles for the CyberRiskAI model
+# ---------------------------------------------------------------------
+# Synthetic clients spanning the risk spectrum, defined the way a Marsh
+# consultant would describe them.  Control ratings are qualitative
+# (mapped through scoring_weights.yaml evidence scales); expected outcomes
+# are the consultant's hypothesis that the model must satisfy.
+#
+# Each profile's controls use the EXACT factor keys + ratings from
+# scoring_weights.yaml.  Ratings run low-risk -> high-risk per factor.
+# =====================================================================
+
+profiles:
+  # ------------------------------------------------------------------
+  # 1. LOW-RISK MANUFACTURING
+  # ------------------------------------------------------------------
+  # A genuinely clean, low-exposure manufacturer.  Controls are near-best
+  # across the board so it should land in the Low band (<25).
+  - name: "Precision Manufacturing Co"
+    industry: "Manufacturing"
+    revenue_usd: 500000000
+    data_exposure: "low"
+    expected_category: "Low"
+    expected_score_min: 10
+    expected_score_max: 30
+    expected_loss_note: "Lowest EAL; clean controls, small attack surface, low sensitivity"
+    controls:
+      external_attack_surface: "minimal"
+      industry_targeting: "low_target"
+      data_sensitivity: "low"
+      patch_cadence: "continuous"
+      vuln_scanning: "continuous"
+      open_critical_vulns: "none"
+      mfa_coverage: "comprehensive"
+      privileged_access: "least_privilege"
+      iam_governance: "mature"
+      edr_coverage: "comprehensive"
+      backup_frequency: "continuous"
+      dr_testing: "quarterly"
+      vendor_assessment: "continuous"
+      contractual_security: "enforced"
+      supply_chain_visibility: "full"
+      incident_response: "tested"
+      risk_oversight: "dedicated"
+      cyber_insurance: "comprehensive"
+
+  # ------------------------------------------------------------------
+  # 2. MEDIUM-RISK RETAIL
+  # ------------------------------------------------------------------
+  # A genuine mid-market retailer: some card data, decent but not great
+  # controls.  Should sit in the Medium band (35-55).
+  - name: "Metro Retail Group"
+    industry: "Retail"
+    revenue_usd: 750000000
+    data_exposure: "moderate"
+    expected_category: "Medium"
+    expected_score_min: 35
+    expected_score_max: 55
+    expected_loss_note: "Moderate EAL; card data + customer records, average controls"
+    controls:
+      external_attack_surface: "moderate"
+      industry_targeting: "moderate_target"
+      data_sensitivity: "moderate"
+      patch_cadence: "monthly"
+      vuln_scanning: "weekly"
+      open_critical_vulns: "low"
+      mfa_coverage: "majority"
+      privileged_access: "basic"
+      iam_governance: "defined"
+      edr_coverage: "majority"
+      backup_frequency: "daily"
+      dr_testing: "annual"
+      vendor_assessment: "annual"
+      contractual_security: "standard"
+      supply_chain_visibility: "partial"
+      incident_response: "documented"
+      risk_oversight: "delegated"
+      cyber_insurance: "partial"
+
+  # ------------------------------------------------------------------
+  # 3. HIGH-RISK HEALTHCARE
+  # ------------------------------------------------------------------
+  - name: "St Helier Health System"
+    industry: "Healthcare"
+    revenue_usd: 1200000000
+    data_exposure: "critical"
+    expected_category: "High"
+    expected_score_min: 55
+    expected_score_max: 80
+    expected_loss_note: "High EAL; protected health data, heavy regulation, mixed controls"
+    controls:
+      external_attack_surface: "high"
+      industry_targeting: "very_high_target"
+      data_sensitivity: "critical"
+      patch_cadence: "adhoc"
+      vuln_scanning: "quarterly"
+      open_critical_vulns: "high"
+      mfa_coverage: "partial"
+      privileged_access: "weak"
+      iam_governance: "informal"
+      edr_coverage: "minimal"
+      backup_frequency: "weekly"
+      dr_testing: "annual"
+      vendor_assessment: "onboarding_only"
+      contractual_security: "minimal"
+      supply_chain_visibility: "limited"
+      incident_response: "informal"
+      risk_oversight: "delegated"
+      cyber_insurance: "partial"
+
+  # ------------------------------------------------------------------
+  # 4. FINANCIAL INSTITUTION (HIGH DATA EXPOSURE)
+  # ------------------------------------------------------------------
+  # A large, heavily-regulated bank with genuinely strong controls.  The
+  # MEDIUM score is the model being correct: strong controls DO offset a
+  # high-value sector.  Its risk is the largest ABSOLUTE loss (revenue-
+  # scaled), which is the point -- controls reduce rate, not severity scale.
+  - name: "Meridian Capital Bank"
+    industry: "Financial Services"
+    revenue_usd: 2000000000
+    data_exposure: "critical"
+    expected_category: "Medium"
+    expected_score_min: 35
+    expected_score_max: 50
+    expected_loss_note: "Largest absolute loss (biggest revenue); strong controls but a high-value, always-targeted sector"
+    controls:
+      external_attack_surface: "extensive"
+      industry_targeting: "very_high_target"
+      data_sensitivity: "critical"
+      patch_cadence: "monthly"
+      vuln_scanning: "weekly"
+      open_critical_vulns: "moderate"
+      mfa_coverage: "comprehensive"
+      privileged_access: "least_privilege"
+      iam_governance: "mature"
+      edr_coverage: "comprehensive"
+      backup_frequency: "daily"
+      dr_testing: "quarterly"
+      vendor_assessment: "annual"
+      contractual_security: "enforced"
+      supply_chain_visibility: "partial"
+      incident_response: "tested"
+      risk_oversight: "dedicated"
+      cyber_insurance: "comprehensive"
+
+  # ------------------------------------------------------------------
+  # 5. SMALL BUSINESS WITH WEAK CONTROLS
+  # ------------------------------------------------------------------
+  - name: "Brightline Consulting LLP"
+    industry: "Professional Services"
+    revenue_usd: 15000000
+    data_exposure: "moderate"
+    expected_category: "Critical"
+    expected_score_min: 75
+    expected_score_max: 100
+    expected_loss_note: "Small absolute loss (tiny revenue) but the WORST controls; critical category"
+    controls:
+      external_attack_surface: "high"
+      industry_targeting: "moderate_target"
+      data_sensitivity: "high"
+      patch_cadence: "none"
+      vuln_scanning: "none"
+      open_critical_vulns: "critical"
+      mfa_coverage: "none"
+      privileged_access: "none"
+      iam_governance: "absent"
+      edr_coverage: "none"
+      backup_frequency: "none"
+      dr_testing: "never"
+      vendor_assessment: "none"
+      contractual_security: "none"
+      supply_chain_visibility: "none"
+      incident_response: "none"
+      risk_oversight: "absent"
+      cyber_insurance: "none"

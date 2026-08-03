@@ -1,0 +1,16 @@
+source,sector,metric,value,units,notes
+Verizon DBIR,All,breach_frequency,0.75,events_per_year,"DBIR 2025: large firms disclose a breach within 12 months"
+IBM CODB,All,avg_cost_per_record,165,usd_per_record,IBM Cost of a Data Breach 2024 global average
+IBM CODB,All,breach_size_records,26000,records,IBM 2024 average breach size
+IBM CODB,All,avg_total_cost,4.88,usd_millions,IBM 2024 global average total cost per breach
+Hiscox,All,cyber_readiness_index,4.4,score,Hiscox Cyber Readiness Report 2024 (0-10)
+Hiscox,All,cyber_attack_frequency,0.35,events_per_year,Hiscox 2024: large firms experience an average of 0.35 attacks/yr
+Hiscox,All,avg_response_cost,0.5,usd_millions,Hiscox 2024 average incident response cost
+NetDiligence,All,ransomware_share,0.42,fraction,NetDiligence Cyber Claims Study 2023 ransomware share of claims
+NetDiligence,All,median_ransom_payment,0.15,usd_millions,NetDiligence 2023 median ransomware payment
+Verizon DBIR,All,ransomware_frequency,0.40,events_per_year,DBIR 2025 ransomware incident rate for large firms
+FBI IC3,BEC,bec_frequency,1.10,events_per_year,2024 IC3 BEC complaint rate for large firms
+Verizon DBIR,Cloud,cloud_outage_frequency,0.50,events_per_year,DBIR 2025 cloud/third-party outage rate
+Verizon DBIR,BI,business_interruption_frequency,0.30,events_per_year,DBIR 2025 BI incident rate
+Verizon DBIR,SupplyChain,supply_chain_frequency,0.25,events_per_year,DBIR 2025 supply-chain compromise rate
+ICS-CERT,OT,ot_physical_frequency,0.10,events_per_year,ICS-CERT OT/physical incident rate

@@ -1,0 +1,40 @@
+# =====================================================================
+# Simulation engine configuration
+# ---------------------------------------------------------------------
+# Machine / compute settings for the Monte Carlo engine.  Deliberately
+# separated from config/scenarios.yaml: scenario baselines are MODEL
+# calibration (should be reviewed as assumptions), while the settings here
+# are engineering knobs (runtime / seed / precision) that change how many
+# years the engine simulates, not what the model asserts about risk.
+#
+#   default_years   number of independent annual loss scenarios to simulate
+#   chunk_size      max years materialised per aggregation pass (bounds RAM)
+#   seed            root RNG seed -> bit-identical reproducibility across runs
+#   tail_quantile   reference tail probability used for PML-style metrics
+# =====================================================================
+
+default_years: 100000
+chunk_size: 20000
+seed: 20240817
+tail_quantile: 0.99
+
+# Dependence model for scenario frequencies.
+#   copula_model   "gaussian"  (no upper-tail dependence -- Phase-1 default)
+#                  "student_t" (adds genuine upper-tail dependence; recommended)
+#   copula_nu      Student-t degrees of freedom.  nu=5 is the Phase-1
+#                  recommendation; nu -> infinity recovers the Gaussian copula.
+copula_model: "student_t"
+copula_nu: 5.0
+
+# Event clustering: "catastrophe years".
+# Plain-English story: "roughly one year in twenty, several things go wrong
+# at once and everything costs more.  In those years we multiply the cost of
+# whatever happens by ~2x."
+#   event_clustering_enabled   master switch (True = model catastrophe years)
+#   catastrophe_probability    P(a given year is a catastrophe year); 0.05 = ~1 in 20
+#   catastrophe_multiplier_mean   expected loss multiplier in a catastrophe year
+#   catastrophe_multiplier_cv     uncertainty on that multiplier (0.5 = 50% CV)
+event_clustering_enabled: true
+catastrophe_probability: 0.05
+catastrophe_multiplier_mean: 2.0
+catastrophe_multiplier_cv: 0.5

@@ -1,0 +1,214 @@
+# =====================================================================
+# Cyber risk scoring weights — Phase 2
+# ---------------------------------------------------------------------
+# Fully configurable scoring model.  A company's cyber profile is scored
+# across DOMAINS (top-level exposure areas); each domain contains FACTORS
+# (discrete questionnaire items, each with a 0-100 score and an evidence
+# label).  The composite risk score is the weighted average of domain
+# scores:
+#
+#     domain_score   = weighted mean of its factor scores
+#     composite      = sum(domain_weight * domain_score)   (weights sum to 1)
+#
+# The composite (0-100) is mapped to a risk category via `category_bands`
+# and feeds the loss engine through a log-linear frequency link (see
+# scoring.py and simulation.py).
+#
+# Every factor carries an `evidence_scale` that maps a qualitative rating
+# (e.g. "not_implemented" -> 0) to a 0-100 score, keeping the whole model
+# explainable for client communication.  Higher score = HIGHER risk.
+# =====================================================================
+
+category_bands:
+  - max_score: 25
+    category: "Low"
+  - max_score: 50
+    category: "Medium"
+  - max_score: 75
+    category: "High"
+  - max_score: 100
+    category: "Critical"
+
+domains:
+  - key: "threat_exposure"
+    name: "Threat & Exposure"
+    weight: 0.20
+    factors:
+      - key: "external_attack_surface"
+        name: "External attack surface"
+        weight: 0.30
+        evidence_scale:
+          # Higher score = HIGHER risk.  A larger/more exposed attack surface
+          # means more to defend, so extensive -> 90, minimal -> 10.
+          minimal: 10
+          low: 25
+          moderate: 50
+          high: 75
+          extensive: 90
+      - key: "industry_targeting"
+        name: "Industry targeting"
+        weight: 0.40
+        evidence_scale:
+          low_target: 20
+          moderate_target: 45
+          high_target: 70
+          very_high_target: 90
+      - key: "data_sensitivity"
+        name: "Data sensitivity"
+        weight: 0.30
+        evidence_scale:
+          low: 25
+          moderate: 50
+          high: 75
+          critical: 90
+
+  - key: "vulnerability_mgmt"
+    name: "Vulnerability Management"
+    weight: 0.20
+    factors:
+      - key: "patch_cadence"
+        name: "Patch cadence"
+        weight: 0.35
+        evidence_scale:
+          continuous: 15
+          monthly: 40
+          quarterly: 65
+          adhoc: 85
+          none: 95
+      - key: "vuln_scanning"
+        name: "Vulnerability scanning"
+        weight: 0.30
+        evidence_scale:
+          continuous: 15
+          weekly: 40
+          monthly: 60
+          quarterly: 80
+          none: 95
+      - key: "open_critical_vulns"
+        name: "Open critical vulnerabilities"
+        weight: 0.35
+        evidence_scale:
+          none: 15
+          low: 40
+          moderate: 60
+          high: 80
+          critical: 95
+
+  - key: "access_control"
+    name: "Identity & Access Control"
+    weight: 0.20
+    factors:
+      - key: "mfa_coverage"
+        name: "MFA coverage"
+        weight: 0.40
+        evidence_scale:
+          comprehensive: 10
+          majority: 35
+          partial: 60
+          minimal: 80
+          none: 95
+      - key: "privileged_access"
+        name: "Privileged access control"
+        weight: 0.35
+        evidence_scale:
+          least_privilege: 15
+          segmented: 40
+          basic: 65
+          weak: 85
+          none: 95
+      - key: "iam_governance"
+        name: "IAM governance"
+        weight: 0.25
+        evidence_scale:
+          mature: 20
+          defined: 45
+          informal: 70
+          absent: 90
+
+  - key: "endpoint_resilience"
+    name: "Endpoint & Data Resilience"
+    weight: 0.15
+    factors:
+      - key: "edr_coverage"
+        name: "EDR / endpoint detection"
+        weight: 0.40
+        evidence_scale:
+          comprehensive: 15
+          majority: 40
+          partial: 65
+          minimal: 80
+          none: 95
+      - key: "backup_frequency"
+        name: "Backup frequency"
+        weight: 0.35
+        evidence_scale:
+          continuous: 15
+          daily: 35
+          weekly: 60
+          monthly: 80
+          none: 95
+      - key: "dr_testing"
+        name: "DR / recovery testing"
+        weight: 0.25
+        evidence_scale:
+          quarterly: 15
+          annual: 45
+          occasional: 70
+          never: 90
+
+  - key: "third_party_risk"
+    name: "Third-Party / Supply-Chain Risk"
+    weight: 0.15
+    factors:
+      - key: "vendor_assessment"
+        name: "Vendor risk assessment"
+        weight: 0.40
+        evidence_scale:
+          continuous: 15
+          annual: 40
+          onboarding_only: 65
+          none: 90
+      - key: "contractual_security"
+        name: "Contractual security requirements"
+        weight: 0.30
+        evidence_scale:
+          enforced: 20
+          standard: 45
+          minimal: 70
+          none: 90
+      - key: "supply_chain_visibility"
+        name: "Supply-chain visibility"
+        weight: 0.30
+        evidence_scale:
+          full: 15
+          partial: 50
+          limited: 75
+          none: 90
+
+  - key: "resilience_governance"
+    name: "Resilience & Governance"
+    weight: 0.10
+    factors:
+      - key: "incident_response"
+        name: "Incident response plan"
+        weight: 0.40
+        evidence_scale:
+          tested: 15
+          documented: 45
+          informal: 70
+          none: 90
+      - key: "risk_oversight"
+        name: "Risk oversight / CISO"
+        weight: 0.30
+        evidence_scale:
+          dedicated: 20
+          delegated: 50
+          absent: 85
+      - key: "cyber_insurance"
+        name: "Cyber insurance in place"
+        weight: 0.30
+        evidence_scale:
+          comprehensive: 20
+          partial: 45
+          minimal: 70
+          none: 85

@@ -1,0 +1,37 @@
+# =====================================================================
+# Parameter uncertainty specification
+# ---------------------------------------------------------------------
+# Plain-English story for the CFO:
+#
+#   "We don't know the exact breach rate, or how heavy the tail is.  So we
+#   vary each assumption within a plausible range, re-run the model many
+#   times, and report the middle (median) and a 90% band around it."
+#
+# `iterations`      how many perturbed models we run (200 is enough for a
+#                   stable 90% band; more is slower).
+# `seed`            reproducibility: same seed -> same perturbations.
+#
+# Per-parameter perturbation (all multiplicative on a log scale, so rates
+# can never go negative and the spread is symmetric in percentage terms):
+#   lambda_cv       uncertainty on each scenario's annual event rate
+#                   (0.30 = the rate could plausibly be ~30% higher or lower)
+#   severity_scale_cv  uncertainty on the base loss amount per scenario
+#   severity_sigma_cv  uncertainty on the tail weight (sigma) -- a large
+#                   CV here is the single biggest driver of ES99/PML spread
+#   loading_sd      uncertainty on the copula loadings (additive on loading,
+#                   clipped to [-0.95, 0.95])
+#   copula_nu_sd    uncertainty on the Student-t degrees of freedom (clipped
+#                   to >= 3; nu controls how much tail dependence there is)
+#
+# All defaults are deliberately modest so the band reads as "plausible
+# variation around the central model", not "everything is noise".
+# =====================================================================
+
+iterations: 200
+seed: 20250201
+
+lambda_cv: 0.30
+severity_scale_cv: 0.30
+severity_sigma_cv: 0.15
+loading_sd: 0.10
+copula_nu_sd: 1.0

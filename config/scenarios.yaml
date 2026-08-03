@@ -1,0 +1,160 @@
+# =====================================================================
+# Cyber risk scenario calibration — Phase 1 baseline
+# ---------------------------------------------------------------------
+# Baselines are anchored to public benchmarks (Verizon DBIR 2025,
+# Hiscox Cyber Readiness 2024, IBM Cost of a Data Breach 2024,
+# NetDiligence Cyber Claims Study 2023) plus a DOCUMENTED illustrative
+# mock loss dataset. They are order-of-magnitude realistic for a
+# ~$1bn-revenue firm and are deliberately editable: swap in your own
+# calibration (e.g. licensed Advisen/Cyence event tables) by editing
+# this file — no engine changes required.
+#
+# Annotation is a calibration log entry: keeps every parameter
+# attributable, which matters when the output goes in a broker report.
+#
+# Interpretation of frequency/severity parameters
+#   frequency_model  "poisson"   N ~ Poisson(lambda)            [default]
+#                    "negbin"    N ~ NegBin(n, p)  E[N] = lambda, Var[N] = lambda*dispersion
+#   freq_dispersion  burstiness ratio Var/Mean of the annual count:
+#                    1.0 = perfectly regular Poisson; >1 = over-dispersed NegBin.
+#                    (e.g. 2.0 = the count varies twice as much as a regular pattern)
+#   severity_model   "lognormal" S = scale * lognormal(mu, sigma)  E[S] = scale*exp(mu+0.5 sigma^2)
+#                    "gpd"       S = threshold + GPD(scale, xi)    E[S] = threshold + scale/(1-xi)   (xi < 1)
+#   dependence       one-factor Gaussian/Student-t copula: Z_i = sqrt(1-loading_i^2)*eps_i + loading_i*M
+#                    -> pairwise Pearson correlation on uniform scale ~= loading_i * loading_j.
+#                    Set all loadings to 0 for full independence.
+# =====================================================================
+
+firm_revenue_usd: 1000000000.0
+
+scenarios:
+  # ---------------------------------------------------------------- data breach
+  breach:
+    name: "Data breach / data exfiltration"
+    frequency_model: "negbin"
+    lambda_annual: 0.75
+    freq_dispersion: 1.5
+    severity_model: "lognormal"
+    severity_scale: 320000.0
+    severity_mu: 0.60
+    severity_sigma: 1.10
+    copula_loading: 0.55
+    revenue_exponent: 0.60
+    annotation:
+      source: "DBIR 2025 + IBM CODB 2024; mock claims layer"
+      lambda: "~75% of large firms disclose a breach in 12 mo (DBIR benchmark)"
+      severity: "E[S]~$625k incl. exfil/PR/regulatory; heavy tail (mock claims)"
+      tail_note: "sigma high: low-frequency catastrophic sector events"
+
+  # ---------------------------------------------------------------- ransomware
+  ransomware:
+    name: "Ransomware / extortion"
+    frequency_model: "negbin"
+    lambda_annual: 0.40
+    freq_dispersion: 2.0
+    severity_model: "lognormal"
+    severity_scale: 510000.0
+    severity_mu: 0.75
+    severity_sigma: 1.30
+    copula_loading: 0.70
+    revenue_exponent: 0.60
+    annotation:
+      source: "Hiscox Cyber Readiness 2024 + NetDiligence 2023; mock claims layer"
+      lambda: "~40%/yr for large firms (Hiscox 2024 benchmark)"
+      severity: "E[S]~$1.1m incl. extortion+response; spike via target-role loadings"
+      tail_note: "heaviest tail scenario"
+
+  # ---------------------------------------------------------------- business email compromise
+  bec:
+    name: "Business email compromise (BEC)"
+    frequency_model: "negbin"
+    lambda_annual: 1.10
+    freq_dispersion: 1.5
+    severity_model: "lognormal"
+    severity_scale: 240000.0
+    severity_mu: 0.55
+    severity_sigma: 1.00
+    copula_loading: 0.40
+    revenue_exponent: 0.55
+    annotation:
+      source: "FBI IC3 + NetDiligence 2023; mock claims layer"
+      lambda: "highest-frequency low-severity scenario (~1.1/yr)"
+      severity: "E[S]~$420k direct wire loss + investigation"
+      tail_note: "moderate tail (amounts bounded by wire limits)"
+
+  # ---------------------------------------------------------------- cloud / third-party outage
+  cloud_outage:
+    name: "Cloud / SaaS outage (third-party)"
+    frequency_model: "negbin"
+    lambda_annual: 0.50
+    freq_dispersion: 1.5
+    severity_model: "lognormal"
+    severity_scale: 450000.0
+    severity_mu: 0.60
+    severity_sigma: 1.15
+    copula_loading: 0.50
+    revenue_exponent: 0.75
+    annotation:
+      source: "CrowdStrike 2024 incident class + BI benchmark; mock claims layer"
+      lambda: "~1 in 2 yrs large firm touches material provider incident"
+      severity: "E[S]~$830k business-interruption dominated"
+      tail_note: "concentration risk: correlated with supply-chain scenario"
+
+  # ---------------------------------------------------------------- business interruption (own ops)
+  bi:
+    name: "Business interruption (own operations)"
+    frequency_model: "negbin"
+    lambda_annual: 0.30
+    freq_dispersion: 1.5
+    severity_model: "lognormal"
+    severity_scale: 380000.0
+    severity_mu: 0.70
+    severity_sigma: 1.20
+    copula_loading: 0.55
+    revenue_exponent: 0.80
+    annotation:
+      source: "NetDiligence 2023 BI share + mock claims layer"
+      lambda: "~30%/yr large-firm operational outage"
+      severity: "E[S]~$765k; BI scales most strongly with revenue"
+      tail_note: "worst-case = extended outage of critical systems"
+
+  # ---------------------------------------------------------------- supply-chain compromise
+  supply_chain:
+    name: "Supply-chain / third-party compromise"
+    frequency_model: "negbin"
+    lambda_annual: 0.25
+    freq_dispersion: 2.0
+    severity_model: "lognormal"
+    severity_scale: 520000.0
+    severity_mu: 0.80
+    severity_sigma: 1.35
+    copula_loading: 0.65
+    revenue_exponent: 0.70
+    annotation:
+      source: "SBOM-era breach class + mock claims layer"
+      lambda: "~1 in 4 yrs material vendor compromise"
+      severity: "E[S]~$1.16m; very heavy tail (SolarWinds/MOVEit class)"
+      tail_note: "correlated with cloud_outage + ransomware via common factor"
+
+  # ---------------------------------------------------------------- OT / physical
+  ot_physical:
+    name: "OT / physical impact"
+    frequency_model: "negbin"
+    lambda_annual: 0.10
+    freq_dispersion: 1.5
+    severity_model: "lognormal"
+    severity_scale: 610000.0
+    severity_mu: 0.90
+    severity_sigma: 1.40
+    copula_loading: 0.60
+    revenue_exponent: 0.70
+    annotation:
+      source: "ICS-CERT incident class + mock claims layer"
+      lambda: "low frequency (10%/yr) but potentially severe"
+      severity: "E[S]~$1.5m physical/process damage + recovery"
+      tail_note: "rarest and most extreme tail; loading with overall factor"
+
+revenue_reference_usd: 1000000000.0
+# Scenario severity is scaled to actual firm revenue as
+#   scale_actual = severity_scale * (revenue / revenue_reference_usd)^revenue_exponent
+# This is the classic BI/limits proxy. revenue_exponent=0 keeps scale flat.
