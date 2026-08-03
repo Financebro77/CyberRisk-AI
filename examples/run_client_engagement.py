@@ -155,11 +155,15 @@ def main() -> None:
 
     # ------------------------------------------------------------------ 5. VaR / ES
     sec("5. VAR / EXPECTED SHORTFALL INTERPRETATION")
-    print(f"   VaR 99%    {fmt_usd(m.var_99)}: in 99 of 100 years, the loss stays below this.")
-    print(f"   ES 99%     {fmt_usd(m.es_99)}: IF a 1-in-100 year occurs, the AVERAGE loss")
-    print(f"              in that tail is this much -- the truly decision-relevant number,")
-    print(f"              because it captures how bad the bad years really get.")
-    print(f"\n   ES99 / EAL = {m.es_99/m.eal:.1f}x: the tail is {m.es_99/m.eal:.1f} times the")
+    # Actuarial-standard wording: every VaR names the confidence level, the
+    # 1-year horizon, and the loss definition (ground-up, before insurance).
+    print(f"   VaR 99% (1-year, ground-up before insurance) {fmt_usd(m.var_99)}:")
+    print(f"     '99% annual aggregate VaR is {fmt_usd(m.var_99)}. Only 1% of")
+    print(f"     simulated years exceed this amount.'")
+    print(f"   ES 99% (1-year, ground-up before insurance)  {fmt_usd(m.es_99)}:")
+    print(f"     'The 99% Expected Shortfall is {fmt_usd(m.es_99)}, the average annual")
+    print(f"     loss in the worst 1% of simulated outcomes.'")
+    print(f"   ES99 / EAL = {m.es_99/m.eal:.1f}x: the tail is {m.es_99/m.eal:.1f} times the")
     print(f"   average year.  This is the 'catastrophe multiplier' -- a single 1-in-100")
     print(f"   event can be worth over a decade of average losses.")
 

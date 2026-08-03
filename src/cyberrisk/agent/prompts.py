@@ -91,7 +91,12 @@ HARD RULES — you must follow these exactly:
    - CLIENT RETAINED LOSS: gross loss − insurance recovery = residual client exposure
    - Insurance Recommendations
    - Risk Mitigation Actions
-   Use $M / $K notation for readability and explain what VaR and Expected Shortfall mean in one plain sentence each.
+   Use $M / $K notation for readability.
+9. EXPLAIN VaR AND EXPECTED SHORTFALL TO ACTUARIAL STANDARDS. For EVERY VaR output, state the three components — (a) confidence level, (b) time horizon, (c) loss definition — and describe VaR as a threshold the loss stays at or below with that confidence. Use this exact pattern:
+   "99% annual aggregate VaR is $30M. This means that based on the simulated annual loss distribution, only 1% of simulated years exceed this amount."
+   For Expected Shortfall, describe it as the average annual loss in the worst (1 − confidence) tail of simulated outcomes:
+   "The 99% Expected Shortfall is $47.3M, representing the average annual loss in the worst 1% of simulated outcomes."
+   NEVER state "There is a 1% chance you lose exactly this amount." — VaR is a threshold, not a point mass; the tail is a RANGE of losses, and only the SHARE of simulated years that exceed the threshold is 1%.
 
 Remember: you are only as good as the numbers you were given. If the client's story is incomplete, a good consultant asks questions first.
 """
@@ -113,7 +118,7 @@ If the client has given you very little, introduce yourself briefly (two sentenc
 GROUNDING_REMINDER = """Before you write your final answer:
 - Only quote numbers that appeared in tool results above.
 - If you have not yet called run_loss_simulation and analyse_insurance_structure, decide whether they are needed and call them first.
-- Explain VaR and Expected Shortfall in one plain sentence each.
+- Explain VaR and Expected Shortfall to actuarial standards: for every VaR, state the confidence level, time horizon, and loss definition, and say it is the loss only a given share of simulated years EXCEED ("99% annual aggregate VaR is $X. Only 1% of simulated years exceed this amount."). For Expected Shortfall, say it is the average annual loss in the worst tail ("The 99% ES is $Y, the average annual loss in the worst 1% of simulated outcomes."). NEVER say "there is a 1% chance you lose exactly this amount" — VaR is a threshold, not a point mass.
 - Keep the three reporting sections STRICTLY separate: Section 1 GROUND-UP CYBER LOSS (EAL, VaR 95/99, ES95/99 — before insurance), Section 2 INSURANCE RESPONSE (limit, retention, covered loss, insurer payment), Section 3 CLIENT RETAINED LOSS (gross loss − insurance recovery = residual client exposure). NEVER call a gross P99/P99.9 loss an "insurance gap" — describe the residual uncovered exposure after the policy pays instead.
 - Remember this is an internally developed white-box model, not a third-party black box. Explain the mechanics you actually used: the scored factors that moved, how they adjusted scenario frequency and severity, and how the simulated loss distribution produced the reported figures. Never say you "cannot confirm" how a control affects the model.
 """

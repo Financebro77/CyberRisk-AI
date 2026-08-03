@@ -130,6 +130,24 @@ class CyberRiskAgent:
         """
         return explain_model_mechanics().sections()
 
+    @staticmethod
+    def explain_risk_measures(
+        var_99: float,
+        es_99: float,
+        var_95: float | None = None,
+        es_95: float | None = None,
+        loss_definition: str = "total economic loss before insurance recovery",
+    ) -> dict[str, str]:
+        """Return actuarial-standard VaR/ES explanation sentences.
+
+        Each sentence names the confidence level, the 1-year horizon, and the
+        loss definition, and frames VaR as a threshold only a share of
+        simulated years exceed (never a point-mass probability).
+        """
+        from cyberrisk.agent.risk_explanation import explain_risk_measures as _explain
+
+        return _explain(var_99, es_99, var_95, es_95, loss_definition)
+
     # ------------------------------------------------------------------
     # Loop internals
     # ------------------------------------------------------------------

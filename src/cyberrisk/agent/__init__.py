@@ -31,6 +31,14 @@ from cyberrisk.agent.model_mechanics import (
     ModelMechanics,
     explain_model_mechanics,
 )
+from cyberrisk.agent.risk_explanation import (
+    ESExplanation,
+    VarExplanation,
+    contains_forbidden_var_wording,
+    explain_expected_shortfall,
+    explain_risk_measures,
+    explain_var,
+)
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief
 from cyberrisk.agent.tools import (
     analyse_insurance_structure,
@@ -45,11 +53,17 @@ __all__ = [
     "CompanyBrief",
     "CyberRiskAgent",
     "DeepSeekClient",
+    "ESExplanation",
     "ModelMechanics",
+    "VarExplanation",
     "analyse_insurance_structure",
     "assess_company_risk",
     "build_factor_scores",
+    "contains_forbidden_var_wording",
+    "explain_expected_shortfall",
     "explain_model_mechanics",
+    "explain_risk_measures",
+    "explain_var",
     "generate_risk_report",
     "run_loss_simulation",
 ]
