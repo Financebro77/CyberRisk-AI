@@ -739,4 +739,16 @@ TOOL_SCHEMAS: list[dict] = [
         "Generate an Excel workbook of the full assessment for the client.",
         {"firm_name": {"type": "string", "description": "Client firm name"}, "out_dir": {"type": "string", "description": "Optional output directory"}},
     ),
+    _tool(
+        "run_control_improvement_scenario",
+        "Model the effect of a control improvement on the client's loss: returns "
+        "before/after EAL, VaR 99 and ES 99 plus the loss reduction and percentage "
+        "improvement. Only claim sensitivity results after this tool runs successfully. "
+        "Requires revenue and a security-controls description.",
+        {
+            **_brief_properties(),
+            "control_change": {"type": "string", "description": "Improvement to model, e.g. 'implement MFA', 'improve segmentation', 'reduce privileged access', 'add immutable backups'"},
+            "n_years": {"type": "integer", "description": "Simulation years (default 100000)"},
+        },
+    ),
 ]

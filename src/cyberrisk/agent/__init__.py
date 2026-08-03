@@ -40,6 +40,10 @@ from cyberrisk.agent.risk_explanation import (
     explain_var,
 )
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief
+from cyberrisk.agent.sensitivity_tools import (
+    ControlImprovementResult,
+    run_control_improvement_scenario,
+)
 from cyberrisk.agent.tools import (
     analyse_insurance_structure,
     assess_company_risk,
@@ -60,10 +64,12 @@ __all__ = [
     "assess_company_risk",
     "build_factor_scores",
     "contains_forbidden_var_wording",
+    "ControlImprovementResult",
     "explain_expected_shortfall",
     "explain_model_mechanics",
     "explain_risk_measures",
     "explain_var",
     "generate_risk_report",
+    "run_control_improvement_scenario",
     "run_loss_simulation",
 ]

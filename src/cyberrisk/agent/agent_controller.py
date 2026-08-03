@@ -28,6 +28,7 @@ from cyberrisk.agent.model_mechanics import explain_model_mechanics
 from cyberrisk.agent.prompts import SYSTEM_PROMPT
 from agent.safety import OutputCheck  # existing hallucination guard (src/agent)
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief, PolicyInput, ToolResult
+from cyberrisk.agent.sensitivity_tools import run_control_improvement_scenario
 from cyberrisk.agent.tools import (
     TOOL_SCHEMAS,
     analyse_insurance_structure,
@@ -57,6 +58,11 @@ _TOOL_IMPLEMENTATIONS = {
         brief,
         firm_name=extra.get("firm_name"),
         out_dir=extra.get("out_dir"),
+        n_years=extra.get("n_years"),
+    ),
+    "run_control_improvement_scenario": lambda brief, extra: run_control_improvement_scenario(
+        brief,
+        control_change=extra.get("control_change"),
         n_years=extra.get("n_years"),
     ),
 }
@@ -225,6 +231,21 @@ class CyberRiskAgent:
                     ):
                         if key in crl:
                             tool_metrics[key] = float(crl[key])
+                # Sensitivity figures (before/after) validate claims that a
+                # control change reduced the loss -- only present after the
+                # scenario tool actually ran.
+                if "impact" in result.data and result.data.get("status") == "ok":
+                    before = result.data.get("before", {})
+                    after = result.data.get("after", {})
+                    for key in ("eal", "var_99", "es_99"):
+                        if key in before:
+                            tool_metrics[f"before_{key}"] = float(before[key])
+                        if key in after:
+                            tool_metrics[f"after_{key}"] = float(after[key])
+                    if "loss_reduction" in result.data.get("impact", {}):
+                        tool_metrics["loss_reduction"] = float(
+                            result.data["impact"]["loss_reduction"]
+                        )
 
     def _post_guard(self, text: str, tool_metrics: dict[str, float]) -> OutputCheck:
         """Run the existing hallucination backstop on the final answer.
