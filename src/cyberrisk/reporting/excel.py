@@ -78,8 +78,22 @@ def write_report(
             ws3, "Retained ES 99%", _es(transferred, retained, 0.99), money=True
         )
 
+    # --- Model Limitations (mandatory disclosure) ------------------------
+    _write_disclosure_sheet(wb)
+
     wb.save(str(out_path))
     return str(out_path)
+
+
+def _write_disclosure_sheet(wb) -> None:
+    """Write the mandatory Model Limitations sheet (always present)."""
+    from cyberrisk.agent.disclosure import DISCLOSURE_HEADING, LIMITATIONS
+
+    ws = wb.create_sheet("Model Limitations")
+    ws.append([DISCLOSURE_HEADING])
+    ws.append([])
+    for item in LIMITATIONS:
+        ws.append([f"- {item}"])
 
 
 def _es(transferred: np.ndarray, retained: np.ndarray, q: float) -> float:

@@ -27,6 +27,12 @@ from __future__ import annotations
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
 from cyberrisk.agent.deepseek_client import DeepSeekClient
+from cyberrisk.agent.disclosure import (
+    DISCLOSURE_HEADING,
+    LIMITATIONS,
+    append_disclosure,
+    disclosure_block,
+)
 from cyberrisk.agent.model_mechanics import (
     ModelMechanics,
     explain_model_mechanics,
@@ -56,15 +62,19 @@ __all__ = [
     "AgentConfig",
     "CompanyBrief",
     "CyberRiskAgent",
+    "DISCLOSURE_HEADING",
     "DeepSeekClient",
     "ESExplanation",
+    "LIMITATIONS",
     "ModelMechanics",
     "VarExplanation",
     "analyse_insurance_structure",
+    "append_disclosure",
     "assess_company_risk",
     "build_factor_scores",
     "contains_forbidden_var_wording",
     "ControlImprovementResult",
+    "disclosure_block",
     "explain_expected_shortfall",
     "explain_model_mechanics",
     "explain_risk_measures",

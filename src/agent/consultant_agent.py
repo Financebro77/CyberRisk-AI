@@ -64,6 +64,25 @@ class ConsultantRecommendation:
     risk_drivers: list[str]
     recommendations: list[str]
     generated_by: str  # "rule-based" or "llm"
+    disclosure: str = ""  # mandatory model-limitations block (appended to every report)
+
+    def full_report(self) -> str:
+        """The complete advisory report text, ending with the disclosure."""
+        lines = [
+            f"Firm: {self.firm_name}",
+            f"Risk category: {self.risk_category}",
+            f"Summary: {self.summary}",
+            f"Key risk drivers: {', '.join(self.risk_drivers) if self.risk_drivers else 'none identified'}",
+            "",
+            "Recommendations:",
+        ]
+        lines.extend(f"- {r}" for r in self.recommendations)
+        report = "\n".join(lines)
+        if self.disclosure:
+            from cyberrisk.agent.disclosure import append_disclosure
+
+            report = append_disclosure(report)
+        return report
 
 
 def _extract_recommendations(text: str) -> list[str]:
@@ -234,6 +253,8 @@ def generate_recommendations(
         ).replace("Summary: ", "")
         generated_by = "rule-based"
 
+    from cyberrisk.agent.disclosure import disclosure_block
+
     return ConsultantRecommendation(
         firm_name=name,
         risk_category=scored.risk_category,
@@ -241,4 +262,5 @@ def generate_recommendations(
         risk_drivers=drivers,
         recommendations=recs,
         generated_by=generated_by,
+        disclosure=disclosure_block(),
     )

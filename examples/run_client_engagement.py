@@ -239,6 +239,11 @@ def main() -> None:
     print(f"   residual uncovered exposure of {fmt_usd(residual)} after insurance.")
     print(f"   Recommend a higher limit and OT hardening.")
 
+    # Mandatory model-limitations disclosure at the end of the advisory report.
+    from cyberrisk.agent.disclosure import disclosure_block
+
+    print(f"\n{disclosure_block()}")
+
 
 if __name__ == "__main__":
     main()

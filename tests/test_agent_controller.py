@@ -12,6 +12,7 @@ import pytest
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
 from cyberrisk.agent.deepseek_client import ChatResponse
+from cyberrisk.agent.disclosure import disclosure_block
 from cyberrisk.agent.memory import ConversationMemory
 from cyberrisk.agent.schemas import AgentConfig
 
@@ -152,4 +153,6 @@ def test_final_text_is_returned_without_tools():
     script = [ChatResponse(content="A thoughtful consultant reply.")]
     agent = _make_agent(script)
     answer = agent.chat("Explain VaR in plain English")
-    assert answer == "A thoughtful consultant reply."
+    # The final answer must carry the mandatory model-limitations disclosure.
+    assert answer.startswith("A thoughtful consultant reply.")
+    assert answer.endswith(disclosure_block())

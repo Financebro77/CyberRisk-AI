@@ -23,6 +23,7 @@ import json
 from typing import Any
 
 from cyberrisk.agent.deepseek_client import DeepSeekClient
+from cyberrisk.agent.disclosure import append_disclosure
 from cyberrisk.agent.memory import ClientFacts, ConversationMemory
 from cyberrisk.agent.model_mechanics import explain_model_mechanics
 from cyberrisk.agent.prompts import SYSTEM_PROMPT
@@ -117,9 +118,14 @@ class CyberRiskAgent:
 
         Runs the bounded tool-calling loop.  Raises RuntimeError when the
         loop exhausts its rounds without a final answer, or on an API error.
+
+        Every FINAL answer carries the mandatory model-limitations disclosure
+        at the end (idempotent -- the memory stores the answer with the
+        disclosure so later turns do not duplicate it).
         """
         self._append_user(user_message, welcome=welcome)
         answer, tool_metrics = self._run_tool_loop()
+        answer = append_disclosure(answer)
         self.memory.append({"role": "assistant", "content": answer})
         return answer
 
