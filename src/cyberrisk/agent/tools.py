@@ -649,7 +649,7 @@ def analyse_insurance_structure(
         },
         "pml_1in1000": p99_9,
         "evaluation": _evaluate_structure(
-            retained_eal, retained_es99, p99_9, residual_at_p99_9, brief
+            retained_eal, retained_es99, p99_9, residual_at_p99_9, brief, limit
         ),
     }
 
@@ -660,6 +660,7 @@ def _evaluate_structure(
     gross_p99_9: float,
     residual_exposure: float,
     brief: CompanyBrief,
+    policy_limit: float | None = None,
 ) -> dict:
     """Plain-language read on the client's retained exposure at this structure.
 
@@ -667,16 +668,28 @@ def _evaluate_structure(
     not a gross-vs-limit "gap".  The gross 1-in-1000-year PML is presented
     alongside the policy's response so the client sees exactly what is covered
     and what remains theirs.
+
+    ``policy_limit`` distinguishes a real policy (even one exhausted by a tail
+    event) from NO insurance in place: with a zero/absent limit the client
+    retains the full loss, and the wording says so rather than implying a
+    policy "pays up to the limit".
     """
     appetite = brief.risk_appetite
     messages: list[str] = []
+    no_insurance = policy_limit is None or policy_limit <= 0.0
     if retained_eal <= 0:
         messages.append("Retained EAL is negligible at this structure.")
     else:
         messages.append(
             f"At this structure the client keeps about ${retained_eal/1e6:,.1f}M of expected annual loss."
         )
-    if residual_exposure > 0:
+    if no_insurance:
+        # No policy in place: the entire extreme loss stays with the client.
+        messages.append(
+            f"With no insurance in place, a ${gross_p99_9/1e6:,.1f}M extreme loss event is "
+            "entirely retained by the client."
+        )
+    elif residual_exposure > 0:
         messages.append(
             f"For a ${gross_p99_9/1e6:,.1f}M extreme loss event, the policy pays up to the "
             f"limit, leaving a residual uncovered exposure of ${residual_exposure/1e6:,.1f}M "

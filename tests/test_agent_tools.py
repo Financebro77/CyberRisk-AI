@@ -7,6 +7,8 @@ actuarial sanity axioms the engine is designed around.
 
 from __future__ import annotations
 
+import pytest
+
 from cyberrisk.agent.schemas import CompanyBrief, PolicyInput
 from cyberrisk.agent.tools import (
     analyse_insurance_structure,
@@ -128,6 +130,81 @@ def test_mixed_strengths_in_one_sentence():
     assert scores["patch_cadence"] == 85.0, scores["patch_cadence"]
     # no DR testing -> never (90).
     assert scores["dr_testing"] == 90.0, scores["dr_testing"]
+
+
+# ---------------------------------------------------------------------------
+# End-to-end production-readiness scenario
+# ---------------------------------------------------------------------------
+
+# The reviewed healthcare-SaaS profile: partial MFA, no immutable backups, weak
+# segmentation, high third-party dependency.  Locks the whole chain -- control
+# parsing -> composite score -> insurance residual -- so a silent regression in
+# any step (e.g. the old global-qualifier bug) fails loudly.
+SAAS_BRIEF = CompanyBrief(
+    firm_name="MedHealth SaaS",
+    industry="Healthcare",
+    revenue_usd=250_000_000,
+    customer_records=10_000_000,
+    technology_dependency="High",
+    security_controls="MFA is partial, no immutable backups, network segmentation is weak, "
+    "heavy reliance on third-party SaaS providers",
+)
+
+
+def test_review_scenario_composite_in_expected_band():
+    """The reviewed profile must land in the High band (50-75), not be inflated.
+
+    Regression guard for the global-qualifier bug: with the controls parsed
+    correctly (partial/weak/none), the composite is ~59.9 (High).  If control
+    parsing regressed, the composite would drift out of this range.
+    """
+    from cyberrisk.scoring import CompanyProfile, compute_score, load_scoring_weights
+
+    scores = build_factor_scores(SAAS_BRIEF)
+    # Control factors match the described strengths exactly.
+    assert scores["mfa_coverage"] == 60.0  # partial
+    assert scores["backup_frequency"] == 95.0  # no immutable backups
+    assert scores["privileged_access"] == 85.0  # weak segmentation
+    scored = compute_score(CompanyProfile(firm_name="X", factor_scores=scores), load_scoring_weights())
+    assert 50.0 <= scored.composite_score <= 75.0, scored.composite_score
+    assert scored.risk_category == "High"
+
+
+def test_review_scenario_insurance_residual_consistent():
+    """For the reviewed profile, the residual identity holds end-to-end."""
+    from cyberrisk.scoring import CompanyProfile, compute_score, load_scoring_weights
+
+    policy = PolicyInput(
+        per_occurrence_deductible=1_000_000.0,
+        per_occurrence_limit=20_000_000.0,
+        annual_aggregate_deductible=1_000_000.0,
+        annual_aggregate_limit=20_000_000.0,
+    )
+    out = analyse_insurance_structure(SAAS_BRIEF, policy, n_years=20_000)
+    assert out["status"] == "ok"
+    g = out["ground_up_loss"]["pml_1in1000"]
+    cl = out["client_retained_loss"]
+    ir = out["insurance_response"]
+    expected = max(0.0, g - ir["retention"] - cl["insurance_recovery_at_p99_9"])
+    assert cl["residual_exposure_at_p99_9"] == expected
+    assert cl["residual_exposure_at_p99_9"] >= 0.0
+    assert cl["insurance_recovery_at_p99_9"] <= ir["policy_limit"]
+    # The gross P99.9 is never labelled a 'gap'.
+    assert "insurance_gap" not in out
+    assert "gap_detected" not in out["evaluation"]
+
+
+def test_review_scenario_explains_scenario_contribution():
+    """Scenario contribution for the reviewed profile links to model outputs."""
+    from cyberrisk.agent.scenario_contribution import analyze_scenario_contribution
+
+    out = analyze_scenario_contribution(SAAS_BRIEF, n_years=20_000)
+    assert out["status"] == "ok"
+    assert out["total_contribution"] == pytest.approx(1.0, abs=0.05)
+    assert all(s["linked_to_model"] for s in out["scenarios"])
+    ransomware = next(s for s in out["scenarios"] if s["scenario_key"] == "ransomware")
+    assert any("MFA" in d for d in ransomware["frequency_drivers"])
+    assert any("backup weakness" in d for d in ransomware["severity_drivers"])
 
 
 # ---------------------------------------------------------------------------

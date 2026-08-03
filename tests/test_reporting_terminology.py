@@ -162,10 +162,12 @@ def test_gross_loss_is_never_labelled_a_gap():
         out = _run(policy)
         # The gross PML is a ground-up figure, never reduced by the policy.
         assert out["ground_up_loss"]["pml_1in1000"] == out["client_retained_loss"]["gross_loss_at_p99_9"]
-        # The evaluation summarises the residual uncovered exposure, not a gap.
+        # The evaluation summarises the client's retained exposure, never a gap.
+        # A real policy uses "residual uncovered exposure"; a zero-limit /
+        # no-insurance structure correctly says the loss is "entirely retained".
         ev = out["evaluation"]["summary"].lower()
         assert "insurance gap" not in ev
-        assert "residual uncovered exposure" in ev
+        assert ("residual uncovered exposure" in ev) or ("entirely retained" in ev)
         # And the legacy keys that encouraged the confusion are gone.
         assert "insurance_gap" not in out
         assert "gap_detected" not in out["evaluation"]
