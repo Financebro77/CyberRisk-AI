@@ -127,13 +127,28 @@ def _attack_surface_rating(dependency: str | None) -> str:
 # We scan for control keywords and apply a strength qualifier (weak / none /
 # strong) to pick the evidence-scale rating.  Anything not mentioned keeps
 # its DEFAULT_RATINGS entry.
+#
+# IMPORTANT: each control is qualified from the CLAUSE that mentions it, not
+# from the whole sentence.  A client may say "MFA is partial, no immutable
+# backups, segmentation is weak" -- the qualifier for MFA ("partial"/neutral)
+# must come from the text around "MFA", not from the "no" that governs
+# backups.  A single absent control must never downgrade unrelated controls.
 _WEAK_WORDS = ("weak", "limited", "poor", "minimal", "lacking", "sparse", "irregular", "lagging", "rare", "outdated")
 _NONE_WORDS = ("none", "no ", "absent", "missing", "don't have", "do not have", "not implemented", "zero")
 _STRONG_WORDS = ("strong", "full", "comprehensive", "enforced", "robust", "mature", "enterprise", "extensive", "continuous")
 
+# Clause separators: the text is split on these so each control is qualified
+# only by its own clause.  Commas, semicolons, and "but"/"and" boundary the
+# phrases the client uses to describe separate controls.
+_CLAUSE_SEPARATORS = (",", ";", " and ", " but ", " while ", " though ", " although ", " yet ")
+
 
 def _qualifier_for(text: str) -> str:
-    """Return 'strong' | 'weak' | 'none' | 'neutral' based on surrounding words."""
+    """Return 'strong' | 'weak' | 'none' | 'neutral' based on surrounding words.
+
+    Operates on the supplied (clause-local) text so a control is qualified by
+    its own phrase, never by words that govern a different control.
+    """
     low = text.lower()
     if any(w in low for w in _NONE_WORDS):
         return "none"
@@ -144,13 +159,65 @@ def _qualifier_for(text: str) -> str:
     return "neutral"
 
 
+def _qualifier_for_control(low_text: str, keyword: str) -> str:
+    """Qualifier for ONE control, read from the clause that mentions it.
+
+    Finds the keyword's position and qualifies the clause-local window around
+    it (the containing clause after splitting on separators), so "no immutable
+    backups" does not downgrade "MFA is partial" in the same sentence.
+
+    When the keyword appears in MULTIPLE clauses (e.g. "poor backups, no
+    immutable backups"), the strictest (most negative) mention wins -- the
+    client said backups are at least partially absent, so "none" is the honest
+    reading.
+    """
+    if keyword not in low_text:
+        return "neutral"
+    # Score every clause that mentions the keyword; "none" > "weak" > "strong"
+    # > "neutral" (a single absent control is the strongest signal).
+    _RANK = {"none": 3, "weak": 2, "strong": 1, "neutral": 0}
+    best = "neutral"
+    idx = -1
+    while True:
+        idx = low_text.find(keyword, idx + 1)
+        if idx < 0:
+            break
+        qual = _qualifier_for(_clause_containing(low_text, idx))
+        if _RANK[qual] > _RANK[best]:
+            best = qual
+    return best
+
+
+def _clause_containing(low_text: str, idx: int) -> str:
+    """The clause (separator-delimited span) containing character ``idx``."""
+    start = 0
+    end = len(low_text)
+    for sep in _CLAUSE_SEPARATORS:
+        sep_low = sep.lower()
+        # find all separator occurrences, bracket the one around idx
+        pos = -1
+        while True:
+            pos = low_text.find(sep_low, pos + 1)
+            if pos < 0:
+                break
+            if pos < idx:
+                start = max(start, pos + len(sep_low))
+            elif pos > idx:
+                end = min(end, pos)
+                break
+    return low_text[start:end]
+
+
 def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> None:
-    """Populate factor ratings from the client's free-text controls description."""
+    """Populate factor ratings from the client's free-text controls description.
+
+    Each control is qualified from its OWN clause (see ``_qualifier_for_control``),
+    so a single absent control never downgrades unrelated controls.
+    """
     text = (brief.security_controls or "").strip()
     if not text:
         return
     low = text.lower()
-    qual = _qualifier_for(text)
 
     # MFA ------------------------------------------------------------------
     if any(k in low for k in ("mfa", "multi-factor", "multifactor", "two-factor", "2fa", "2-factor", "2 factor")):
@@ -159,7 +226,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "minimal",
             "none": "none",
             "neutral": "partial",
-        }[qual]
+        }[_qualifier_for_control(low, "mfa")]
 
     # Network segmentation / privileged access -----------------------------
     if any(k in low for k in ("segment", "microsegment", "network isolation", "air-gap", "air gap")):
@@ -168,7 +235,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "weak",
             "none": "none",
             "neutral": "basic",
-        }[qual]
+        }[_qualifier_for_control(low, "segment")]
 
     # Patching --------------------------------------------------------------
     if any(k in low for k in ("patch", "patching")):
@@ -177,7 +244,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "adhoc",
             "none": "none",
             "neutral": "monthly",
-        }[qual]
+        }[_qualifier_for_control(low, "patch")]
 
     # Vulnerability scanning ------------------------------------------------
     if "vuln" in low and "scan" in low:
@@ -186,7 +253,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "quarterly",
             "none": "none",
             "neutral": "weekly",
-        }[qual]
+        }[_qualifier_for_control(low, "scan")]
 
     # EDR / endpoint --------------------------------------------------------
     if any(k in low for k in ("edr", "endpoint", "antivirus", "anti-virus", "av ")):
@@ -195,7 +262,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "minimal",
             "none": "none",
             "neutral": "majority",
-        }[qual]
+        }[_qualifier_for_control(low, "edr")]
 
     # Backups ---------------------------------------------------------------
     if "backup" in low:
@@ -204,7 +271,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "monthly",
             "none": "none",
             "neutral": "daily",
-        }[qual]
+        }[_qualifier_for_control(low, "backup")]
 
     # DR / recovery testing -------------------------------------------------
     if any(k in low for k in ("disaster recovery", "dr testing", "recovery test", "dr plan")):
@@ -213,7 +280,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "occasional",
             "none": "never",
             "neutral": "annual",
-        }[qual]
+        }[_qualifier_for_control(low, "dr")]
 
     # Incident response -----------------------------------------------------
     if any(k in low for k in ("incident response", "ir plan", "security team", "soc", "runbook")):
@@ -222,7 +289,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "informal",
             "none": "none",
             "neutral": "documented",
-        }[qual]
+        }[_qualifier_for_control(low, "incident response")]
 
     # Governance / CISO -----------------------------------------------------
     if any(k in low for k in ("ciso", "risk oversight", "security leadership", "board")):
@@ -231,7 +298,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "delegated",
             "none": "absent",
             "neutral": "delegated",
-        }[qual]
+        }[_qualifier_for_control(low, "ciso")]
 
 
 def _scan_existing_coverage(brief: CompanyBrief, factors: dict[str, str]) -> None:

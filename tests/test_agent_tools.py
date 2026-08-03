@@ -64,6 +64,72 @@ def test_factor_scores_deterministic():
     assert a == b
 
 
+def test_factor_scores_per_control_qualifier_independent():
+    """Each control is qualified from its OWN clause.
+
+    Regression for the global-qualifier bug: a single "no X" in the sentence
+    must not downgrade unrelated controls.  "MFA is partial, no immutable
+    backups, network segmentation is weak" must score partial / none / weak
+    independently.
+    """
+    brief = CompanyBrief(
+        firm_name="MedHealth SaaS",
+        industry="Healthcare",
+        revenue_usd=250_000_000,
+        customer_records=10_000_000,
+        technology_dependency="High",
+        security_controls="MFA is partial, no immutable backups, network segmentation is weak, "
+        "heavy reliance on third-party SaaS providers",
+    )
+    scores = build_factor_scores(brief)
+    # Partial MFA -> partial (60), not downgraded by "no immutable backups".
+    assert scores["mfa_coverage"] == 60.0, scores["mfa_coverage"]
+    # No immutable backups -> none (95).
+    assert scores["backup_frequency"] == 95.0, scores["backup_frequency"]
+    # Weak segmentation -> weak (85), not downgraded to none.
+    assert scores["privileged_access"] == 85.0, scores["privileged_access"]
+
+
+def test_absent_control_does_not_poison_other_controls():
+    """Adding one absent control must not change any other stated control.
+
+    Regression for the blast-radius case: 'weak MFA, limited segmentation,
+    poor backups' vs the same + 'no immutable backups' must yield identical
+    MFA / segmentation ratings.
+    """
+    base = CompanyBrief(
+        firm_name="A", industry="Retail", revenue_usd=100_000_000,
+        security_controls="weak MFA, limited segmentation, poor backups",
+    )
+    plus_none = CompanyBrief(
+        firm_name="B", industry="Retail", revenue_usd=100_000_000,
+        security_controls="weak MFA, limited segmentation, poor backups, no immutable backups",
+    )
+    a = build_factor_scores(base)
+    b = build_factor_scores(plus_none)
+    # weak MFA -> minimal (80) in both; weak segmentation -> weak (85) in both.
+    assert a["mfa_coverage"] == b["mfa_coverage"] == 80.0
+    assert a["privileged_access"] == b["privileged_access"] == 85.0
+    # Only backup_frequency changes (none for the second brief).
+    assert b["backup_frequency"] == 95.0
+    assert a["backup_frequency"] == 80.0
+
+
+def test_mixed_strengths_in_one_sentence():
+    """A single sentence with different strengths per control parses each one."""
+    brief = CompanyBrief(
+        firm_name="Mixed", industry="Manufacturing", revenue_usd=300_000_000,
+        security_controls="strong MFA but weak patching and no DR testing",
+    )
+    scores = build_factor_scores(brief)
+    # strong MFA -> comprehensive (10).
+    assert scores["mfa_coverage"] == 10.0, scores["mfa_coverage"]
+    # weak patching -> adhoc (85).
+    assert scores["patch_cadence"] == 85.0, scores["patch_cadence"]
+    # no DR testing -> never (90).
+    assert scores["dr_testing"] == 90.0, scores["dr_testing"]
+
+
 # ---------------------------------------------------------------------------
 # assess_company_risk
 # ---------------------------------------------------------------------------
