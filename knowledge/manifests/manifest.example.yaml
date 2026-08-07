@@ -1,0 +1,72 @@
+# =====================================================================
+# MANIFEST EXAMPLE — copy-paste templates for contributors
+# =====================================================================
+# This file is a reference, not a manifest.  Copy the relevant block into
+# corpus_manifest.yaml or dataset_manifest.yaml, fill the fields, then run
+# ingest.  Every field shown is required; the JSON Schemas in schemas/
+# enforce that at ingest time.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# DOCUMENT entry -> paste into corpus_manifest.yaml under `documents:`
+# ---------------------------------------------------------------------
+# - id            unique, namespaced by location: corpus/<domain>/<cat>/<doc>
+# - domain        must match a value in domains.yaml
+# - license_tier  public | licensed | proprietary | client-confidential
+# - chunking.strategy  by_clause | by_control | by_chapter | by_obligation
+#                     | by_campaign | by_incident | by_table | plain
+# - status        active | deprecated | example
+# ---------------------------------------------------------------------
+# document:
+#   id: "corpus/standards/nist-csf-2.0/govern"
+#   domain: standards
+#   category: framework
+#   title: "NIST CSF 2.0 — Govern function controls"
+#   source: "NIST"
+#   license_tier: public
+#   version: "2.0.2026"
+#   content_hash: "sha256:REPLACE_WITH_SHA256_OF_SOURCE_FILE"
+#   acquired_at: "YYYY-MM-DD"
+#   refresh_cadence: on_revision
+#   chunking:
+#     strategy: by_control
+#     max_chars: 1200
+#     overlap: 150
+#   embed_model: default
+#   tags: [nist, csf, govern, framework]
+#   status: active
+
+# ---------------------------------------------------------------------
+# DATASET entry -> paste into dataset_manifest.yaml under `datasets:`
+# ---------------------------------------------------------------------
+# - targets       names the engine seam this table feeds (must exist):
+#                 calibration.apply_benchmarks | credibility.apply_credibility
+#                 | <future seam>
+# ---------------------------------------------------------------------
+# dataset:
+#   id: "datasets/benchmarks/severity/ibm-codb-2026-sector"
+#   domain: benchmarks
+#   category: severity
+#   title: "IBM Cost of a Data Breach 2026 — sector table"
+#   source: "IBM (licensed purchase)"
+#   license_tier: licensed
+#   format: parquet
+#   schema: severity_sector_table
+#   version: "2026.1"
+#   content_hash: "sha256:REPLACE_WITH_SHA256_OF_SOURCE_FILE"
+#   acquired_at: "YYYY-MM-DD"
+#   refresh_cadence: annual
+#   tags: [ibm, severity, sector]
+#   targets: ["calibration.apply_benchmarks"]
+#   status: active
+
+# ---------------------------------------------------------------------
+# Checks before you add
+# ---------------------------------------------------------------------
+# 1. The source file is dropped into the matching corpus/ or datasets/
+#    folder FIRST (the manifest entry points at a real file).
+# 2. content_hash is the sha256 of that file (used for incremental ingest).
+# 3. Licensed / proprietary / client-confidential files are gitignored —
+#    only this entry is committed.  See access/policies.yaml.
+# 4. The document's `domain` exists in domains.yaml; if not, add it there
+#    AND create the corpus/ or datasets/ subfolder.

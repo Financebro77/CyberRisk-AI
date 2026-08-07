@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cyberrisk.ai/schemas/document.schema.json",
+  "title": "Knowledge Document Manifest Entry",
+  "description": "Validates every entry in manifests/corpus_manifest.yaml at ingest time. A malformed entry is rejected loudly and never reaches the index — the same 'loud error at the boundary' pattern as src/cyberrisk/calibration.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "domain", "category", "title", "source", "license_tier",
+    "version", "content_hash", "acquired_at", "refresh_cadence",
+    "chunking", "tags", "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^corpus/[a-z0-9-]+/[a-z0-9-]+/[a-zA-Z0-9-_]+$",
+      "description": "Unique, namespaced by location: corpus/<domain>/<category>/<doc>"
+    },
+    "domain": { "type": "string", "description": "Must match a value in manifests/domains.yaml" },
+    "category": { "type": "string" },
+    "title": { "type": "string", "minLength": 3 },
+    "source": { "type": "string", "minLength": 2, "description": "Publisher / provenance of the content" },
+    "license_tier": {
+      "type": "string",
+      "enum": ["public", "licensed", "proprietary", "client-confidential"],
+      "description": "Drives embedding choice, gitignore handling, and retrieval scope"
+    },
+    "version": { "type": "string", "minLength": 1 },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "sha256 of the source file; derived/state uses it to skip unchanged documents"
+    },
+    "acquired_at": { "type": "string", "format": "date" },
+    "refresh_cadence": {
+      "type": "string",
+      "enum": ["daily", "weekly", "monthly", "quarterly", "annual", "on_revision"]
+    },
+    "chunking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "max_chars", "overlap"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["by_clause", "by_control", "by_chapter", "by_obligation", "by_campaign", "by_incident", "by_table", "plain"]
+        },
+        "max_chars": { "type": "integer", "minimum": 200, "maximum": 10000 },
+        "overlap": { "type": "integer", "minimum": 0, "maximum": 2000 }
+      }
+    },
+    "embed_model": { "type": "string", "description": "Model key resolved per tier in pipelines/embed; licensed & confidential content must use a local model" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "deprecated", "example"],
+      "description": "deprecated content is excluded from retrieval; example entries are not live"
+    }
+  }
+}

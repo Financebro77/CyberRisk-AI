@@ -1,0 +1,27 @@
+# =====================================================================
+# CATALOG — resolves every registered doc/dataset id to its tier + scopes
+# =====================================================================
+# Generated/kept in sync with the manifests.  The retrieval service consults
+# this catalog (not the raw manifests) so tier and scope resolution is a
+# single fast lookup, and so a manifest entry can be "registered" here when
+# its status flips to active.
+#
+# Empty by design: nothing is registered until real content is added.  An
+# entry looks like:
+#
+#   documents:
+#     - id: "corpus/regulatory/dora/ict-risk"
+#       license_tier: public
+#       scopes: [all]                       # public content is available to all roles
+#       status: active
+#
+#   datasets:
+#     - id: "datasets/history/engagements/atlas-2026"
+#       license_tier: client-confidential
+#       scopes: [engagement/atlas-global-logistics]   # engagement-scoped
+#       status: active
+# =====================================================================
+
+documents: []
+
+datasets: []

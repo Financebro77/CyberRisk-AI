@@ -1,0 +1,94 @@
+# =====================================================================
+# CORPUS MANIFEST — single source of truth for every knowledge document
+# =====================================================================
+# One YAML entry per document.  Every field is validated by
+# schemas/document.schema.json at ingest time; a malformed entry is
+# rejected loudly and never reaches the index.
+#
+# license_tier   public | licensed | proprietary | client-confidential
+#   -> drives embedding choice, gitignore handling, retrieval scope
+# refresh_cadence  daily | weekly | monthly | quarterly | annual | on_revision
+# status         active | deprecated
+# chunking       { strategy, max_chars, overlap }  (strategy examples:
+#                by_clause | by_control | by_chapter | by_obligation |
+#                by_campaign | by_incident | by_table | plain)
+# content_hash   sha256 of the source file; derived/state uses it to skip
+#                unchanged documents on re-ingest.
+#
+# HOW TO ADD A DOCUMENT
+#   1. Drop the file into corpus/<domain>/<category>/
+#   2. Add one entry here.
+#   3. Run ingest.  That's it -- no code change.
+#
+# NOTE: the two entries below are WORKED EXAMPLES from the architecture
+# design, not live content.  Nothing in this file is registered until its
+# file actually exists under corpus/ and it is tagged status: active.
+# =====================================================================
+
+documents:
+
+  # --- worked example: regulation ------------------------------------
+  - id: "corpus/regulatory/dora/ict-risk"
+    domain: regulatory
+    category: regulation
+    title: "DORA — ICT Risk Management (Regulation (EU) 2022/2554)"
+    source: "EUR-Lex / European Commission"
+    license_tier: public
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: on_revision
+    chunking:
+      strategy: by_obligation
+      max_chars: 1200
+      overlap: 150
+    embed_model: default
+    tags: [dora, eu, ict-risk, third-party, incident-reporting, resilience-testing]
+    status: example   # active | example | deprecated
+
+  # --- worked example: industry report --------------------------------
+  - id: "corpus/industry-reports/ibm-codb/2026-sector"
+    domain: industry-reports
+    category: report
+    title: "IBM Cost of a Data Breach 2026 — sector tables"
+    source: "IBM (licensed purchase)"
+    license_tier: licensed
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: annual
+    chunking:
+      strategy: by_chapter
+      max_chars: 1500
+      overlap: 200
+    embed_model: local           # licensed content never uses a cloud embedder
+    tags: [ibm, breach-cost, sector, benchmark]
+    status: example
+
+  # --- worked example: incident --------------------------------------
+  - id: "corpus/incidents/curated/2024-change-healthcare"
+    domain: incidents
+    category: incident
+    title: "Change Healthcare ransomware — Feb 2024"
+    source: "HHS OCR + press + court filings (curated)"
+    license_tier: public
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: on_revision
+    chunking:
+      strategy: by_incident
+      max_chars: 1200
+      overlap: 100
+    embed_model: default
+    tags: [ransomware, healthcare, 2024, extortion, third-party]
+    status: example
+
+# ---------------------------------------------------------------------
+# Registration rules
+# ---------------------------------------------------------------------
+# - id must be unique and namespaced by location.
+# - client-confidential documents are gitignored; ONLY the manifest entry
+#   is committed.
+# - status: deprecated entries are excluded from retrieval but kept in the
+#   manifest for the audit trail.

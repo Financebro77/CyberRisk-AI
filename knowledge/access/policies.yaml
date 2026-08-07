@@ -1,0 +1,77 @@
+# =====================================================================
+# ACCESS POLICIES — license tier -> role -> allowed operations
+# =====================================================================
+# Enforced by the retrieval service BEFORE any query runs.  Retrieval must
+# never cross a license tier: a public-only role never sees licensed or
+# client-confidential content, and client-confidential content is never
+# co-mingled with the shared index.
+#
+# This extends the existing confidentiality guard in src/agent/safety.py
+# from *conversation* rules to *data* rules: the safety layer refuses to
+# discuss another client; this policy refuses to even retrieve another
+# client's data.
+#
+# Tiers:
+#   public               - DBIR, NIST, DORA, GDPR, press-visible incidents
+#   licensed             - IBM CODB, Advisen/Cyence event tables, market data
+#   proprietary          - Marsh practice reports, internal methodology
+#   client-confidential  - per-engagement incident / loss history, wordings
+# =====================================================================
+
+tiers:
+  public:
+    description: "Openly licensed and public-domain content."
+    embedding: "cloud"        # may use a hosted embedder
+    gitignore: false          # committed to git
+    retrieval_roles: [analyst, consultant, director, auditor, external_demo]
+    refresh: [daily, weekly, monthly, quarterly, annual, on_revision]
+
+  licensed:
+    description: "Purchased third-party data (IBM, Advisen/Cyence, market pricing)."
+    embedding: "local"        # licensed data never leaves the environment
+    gitignore: true           # files not committed; manifest entry only
+    retrieval_roles: [analyst, consultant, director]
+    refresh: [quarterly, annual, on_revision]
+
+  proprietary:
+    description: "Marsh practice reports and internal methodology."
+    embedding: "local"
+    gitignore: true
+    retrieval_roles: [analyst, consultant, director]
+    refresh: [quarterly, annual, on_revision]
+
+  client-confidential:
+    description: "Per-engagement incident / loss history and policy wordings."
+    embedding: "local"
+    gitignore: true
+    retrieval_roles: [analyst, consultant]
+    # Scope is per-engagement: a role holding scope {engagement: E1} can
+    # retrieve E1's data and nothing else.
+    scoped_by: engagement
+    refresh: [on_revision]
+
+# ---------------------------------------------------------------------
+# Role -> maximum tier
+# ---------------------------------------------------------------------
+roles:
+  external_demo: public
+  auditor:       public            # auditors get citations, not confidential data
+  director:      proprietary
+  consultant:    client-confidential
+  analyst:       client-confidential
+
+# ---------------------------------------------------------------------
+# Rules the retrieval service must enforce
+# ---------------------------------------------------------------------
+rules:
+  - "A query is scoped to the minimum tier that satisfies it; a query for a
+     client-confidential fact is rejected unless the caller holds a scope for
+     that engagement."
+  - "A cross-client query ('what limit did Acme buy?') is hard-blocked at the
+     policy layer before retrieval — mirrors src/agent/safety.py
+     guard_confidential."
+  - "licensed / proprietary / client-confidential content is embedded with a
+     local model only (see pipelines/embed)."
+  - "status: deprecated documents are excluded from retrieval for every role."
+  - "Every retrieved unit carries a citation; the citation bundle is logged
+     to the audit trail for the caller's role."

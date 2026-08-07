@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cyberrisk.ai/schemas/dataset.schema.json",
+  "title": "Dataset Manifest Entry + Table Shape",
+  "description": "Validates every entry in manifests/dataset_manifest.yaml AND the column/unit shape of the dataset file itself, so a malformed table fails loudly at ingest instead of propagating NaN or wrong units into the engine (mirrors src/cyberrisk/data/schemas.py).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "domain", "category", "title", "source", "license_tier",
+    "format", "schema", "version", "content_hash", "acquired_at",
+    "refresh_cadence", "tags", "targets"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^datasets/[a-z0-9-]+/[a-z0-9-]+/[a-zA-Z0-9-_]+$",
+      "description": "Unique, namespaced by location: datasets/<group>/<category>/<table>"
+    },
+    "domain": { "type": "string", "description": "Must match a value in manifests/domains.yaml (benchmarks | market | history)" },
+    "category": { "type": "string" },
+    "title": { "type": "string", "minLength": 3 },
+    "source": { "type": "string", "minLength": 2 },
+    "license_tier": {
+      "type": "string",
+      "enum": ["public", "licensed", "proprietary", "client-confidential"]
+    },
+    "format": { "type": "string", "enum": ["csv", "parquet", "json", "xlsx"] },
+    "schema": { "type": "string", "description": "Named table schema; column definitions registered in the schema registry (dataset.schema.json / future dataset_schemas/)" },
+    "version": { "type": "string", "minLength": 1 },
+    "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "acquired_at": { "type": "string", "format": "date" },
+    "refresh_cadence": { "type": "string", "enum": ["daily", "weekly", "monthly", "quarterly", "annual", "on_revision"] },
+    "tags": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "targets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Engine seam(s) this table feeds; must reference an existing seam or ingest fails (e.g. calibration.apply_benchmarks)"
+    }
+  },
+  "definitions": {
+    "tableSchemaRegistry": {
+      "description": "Named column/unit definitions for dataset tables. Column specs enforce units so wrong units never reach the engine (BenchmarkRecord already carries units).",
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "units"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["string", "integer", "number", "boolean", "date"] },
+              "units": { "type": "string", "description": "e.g. events_per_year, usd_per_record, fraction, usd_millions" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

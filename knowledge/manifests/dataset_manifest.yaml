@@ -1,0 +1,86 @@
+# =====================================================================
+# DATASET MANIFEST — single source of truth for structured quantitative
+# tables that feed the engine calibration seam
+# =====================================================================
+# Structured datasets are NOT chunked or embedded — they are loaded as
+# tables, validated against schemas/dataset.schema.json, and resolved to
+# the existing engine seam (src/cyberrisk/data/loaders.py -> BenchmarkSet,
+# then calibration.apply_benchmarks).  Swapping in a licensed event table
+# means adding an entry here + a loader mapping; the engine is untouched.
+#
+# targets:  names the engine seam(s) this dataset feeds, e.g.
+#           calibration.apply_benchmarks, credibility.apply_credibility,
+#           or a future pricing model.
+#
+# HOW TO ADD A DATASET
+#   1. Drop the file into datasets/<group>/<category>/
+#   2. Add one entry here (format, schema, targets).
+#   3. Run ingest.  No code change.
+#
+# NOTE: entries below are WORKED EXAMPLES from the architecture design.
+# Nothing is live until the file exists and status: active.
+# =====================================================================
+
+datasets:
+
+  # --- worked example: severity (replaces the mock claims layer) ------
+  - id: "datasets/benchmarks/severity/ibm-codb-2026-sector"
+    domain: benchmarks
+    category: severity
+    title: "IBM Cost of a Data Breach 2026 — sector table"
+    source: "IBM (licensed purchase)"
+    license_tier: licensed
+    format: parquet
+    schema: severity_sector_table
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: annual
+    tags: [ibm, severity, cost-per-record, sector]
+    targets: ["calibration.apply_benchmarks"]
+    status: example
+
+  # --- worked example: frequency ---------------------------------------
+  - id: "datasets/benchmarks/frequency/dbir-2026-sector"
+    domain: benchmarks
+    category: frequency
+    title: "Verizon DBIR 2026 — sector breach frequencies"
+    source: "Verizon (public)"
+    license_tier: public
+    format: csv
+    schema: frequency_sector_table
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: annual
+    tags: [dbir, frequency, breach, sector]
+    targets: ["calibration.apply_benchmarks"]
+    status: example
+
+  # --- worked example: firm history (feeds credibility, client tier) --
+  - id: "datasets/history/engagements/atlas-2026"
+    domain: history
+    category: engagement
+    title: "Atlas Global Logistics — incident history (2021-2026)"
+    source: "Client engagement"
+    license_tier: client-confidential
+    format: parquet
+    schema: engagement_history
+    version: "2026.1"
+    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    acquired_at: "2026-08-08"
+    refresh_cadence: on_revision
+    tags: [atlas, logistics, history, credibility]
+    targets: ["credibility.apply_credibility"]
+    status: example
+
+# ---------------------------------------------------------------------
+# Registration rules
+# ---------------------------------------------------------------------
+# - Client-confidential and licensed dataset FILES are gitignored; only the
+#   manifest entry is committed.
+# - format: csv | parquet | json | xlsx (openpyxl already available)
+# - schema: a named table schema registered in schemas/dataset.schema.json
+#   (or a future datasets/schemas registry).
+# - targets must reference an existing engine seam; unknown targets fail
+#   ingest validation.

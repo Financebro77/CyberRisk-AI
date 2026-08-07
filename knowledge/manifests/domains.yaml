@@ -1,0 +1,61 @@
+# =====================================================================
+# DOMAINS — the registered vocabulary for knowledge content
+# =====================================================================
+# Every document/dataset's `domain` must match a value here.  Adding a NEW
+# domain is a data change, not a code change:
+#   - add the domain + its description below, and
+#   - create the matching folder under corpus/ or datasets/.
+#
+# The `engine_link` column documents the runtime seam a domain's content
+# ultimately feeds (if any), so a contributor can see where a new document
+# is headed before it is ingested.
+# =====================================================================
+
+domains:
+
+  # ---- authored knowledge (corpus/) --------------------------------
+  - key: standards
+    description: "Cyber security standards & frameworks (NIST CSF, ISO 27001, CIS, SOC 2, PCI DSS)"
+    subfolders: [nist-csf-2.0, iso-27001, cis-controls, nist-800-53, soc2, pci-dss]
+    engine_link: "scoring (framework -> factor mapping)"
+
+  - key: insurance
+    description: "Coverage, market terms, pricing, and claims guidance"
+    subfolders: [wordings, market-terms, pricing, claims-guides]
+    engine_link: "policy_transform guidance; future pricing model"
+
+  - key: threat-intel
+    description: "Campaigns, threat actors, sector landscapes, vulnerabilities (CVE/KEV)"
+    subfolders: [campaigns, actors, sector-landscapes, vulnerabilities]
+    engine_link: "frequency calibration; real attack-surface input (mirror to datasets)"
+
+  - key: regulatory
+    description: "Regulations and supervisory guidance, per obligation, with thresholds/penalties"
+    subfolders: [dora, nis2, gdpr, hipaa, sec, state-privacy, ai-act, solvency-ii]
+    engine_link: "scoring factors; breach severity components"
+
+  - key: industry-reports
+    description: "Public benchmark & market reports (IBM, DBIR, NetDiligence, Hiscox, Coalition, own practice reports)"
+    subfolders: [ibm-codb, verizon-dbir, netdiligence, hiscox, coalition, marsh-reports]
+    engine_link: "calibration citations; key numbers mirrored to datasets/"
+
+  - key: incidents
+    description: "Historical cyber incidents (curated narratives + imported event tables)"
+    subfolders: [curated, imported]
+    engine_link: "severity calibration; credibility"
+
+  # ---- structured quantitative (datasets/) --------------------------
+  - key: benchmarks
+    description: "Frequency / severity / sector tables feeding the engine calibration seam"
+    subfolders: [frequency, severity, sector]
+    engine_link: "calibration.apply_benchmarks (BenchmarkSet)"
+
+  - key: market
+    description: "Pricing / rate-on-line / market-terms tables (licensed tier)"
+    subfolders: [""]
+    engine_link: "future pricing model; market-term benchmarking"
+
+  - key: history
+    description: "Per-engagement client loss / incident history (client-confidential tier)"
+    subfolders: [""]
+    engine_link: "credibility.apply_credibility"

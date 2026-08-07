@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cyberrisk.ai/schemas/chunk.schema.json",
+  "title": "Chunk Record",
+  "description": "The chunk record the ingest pipeline emits per unit of retrievable text. Hash-keyed so unchanged documents are not re-chunked, and embedded per chunk so mixed embedders per license tier are supported.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["chunk_id", "doc_id", "content", "section_ref", "char_span", "embedding_hash", "license_tier"],
+  "properties": {
+    "chunk_id": {
+      "type": "string",
+      "description": "Stable id = doc_id + '#' + ordinal + content_hash prefix; unchanged content keeps the same id"
+    },
+    "doc_id": { "type": "string", "description": "Corresponds to a corpus_manifest.yaml id" },
+    "content": { "type": "string", "minLength": 20 },
+    "section_ref": { "type": "string", "description": "Human addressable ref: control id, clause ref, obligation id, chapter, page/paragraph" },
+    "char_span": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Character span in the source document, so a citation can point at the exact location"
+    },
+    "embedding_hash": { "type": "string", "description": "Hash of the embedding vector; detects embedder/model changes that invalidate the index" },
+    "license_tier": {
+      "type": "string",
+      "enum": ["public", "licensed", "proprietary", "client-confidential"]
+    }
+  }
+}

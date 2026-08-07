@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cyberrisk.ai/schemas/citation.schema.json",
+  "title": "Citation Record",
+  "description": "Attached to every retrievable unit and to every knowledge-grounded answer. Makes 'every number traces to a source' verifiable post-hoc; the audit log stores these records. Extends src/agent/safety.py's assumptions_cited so cited ids resolve to a registered document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["doc_id", "source", "version", "chunk_ref", "page_paragraph", "license_tier", "retrieved_at"],
+  "properties": {
+    "doc_id": { "type": "string", "description": "Must resolve to an active corpus_manifest.yaml or dataset_manifest.yaml id" },
+    "source": { "type": "string", "description": "Publisher / provenance, e.g. 'Verizon DBIR 2026', 'EUR-Lex'" },
+    "version": { "type": "string" },
+    "chunk_ref": { "type": "string", "description": "chunk_id (doc_id + ordinal) or section_ref for the specific unit cited" },
+    "page_paragraph": { "type": "string", "description": "Page / paragraph / clause / obligation id for the exact location" },
+    "license_tier": {
+      "type": "string",
+      "enum": ["public", "licensed", "proprietary", "client-confidential"]
+    },
+    "retrieved_at": { "type": "string", "format": "date-time", "description": "When the unit was retrieved, so the citation records the version in force at answer time" }
+  }
+}

@@ -24,3 +24,16 @@ venv/
 .idea/
 *.swp
 Thumbs.db
+
+# --- Knowledge layer: generated artifacts (rebuildable from corpus + manifests) ---
+knowledge/derived/
+
+# --- Knowledge layer: licensed / proprietary / client-confidential source files ---
+# Manifest entries are committed; the underlying data files must never be.
+# Uncomment the tier folders you will actually hold so git tracks the rule explicitly.
+knowledge/corpus/insurance/pricing/*
+knowledge/datasets/market/*
+knowledge/datasets/history/*
+knowledge/corpus/incidents/imported/*
+knowledge/corpus/industry-reports/ibm-codb/*
+!knowledge/**/.gitkeep
