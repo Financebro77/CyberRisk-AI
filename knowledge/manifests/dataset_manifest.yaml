@@ -23,39 +23,53 @@
 
 datasets:
 
-  # --- worked example: severity (replaces the mock claims layer) ------
+  # --- example severity table (replaces the mock claims layer) --------
   - id: "datasets/benchmarks/severity/ibm-codb-2026-sector"
     domain: benchmarks
     category: severity
-    title: "IBM Cost of a Data Breach 2026 — sector table"
-    source: "IBM (licensed purchase)"
-    license_tier: licensed
-    format: parquet
+    title: "IBM Cost of a Data Breach 2026 — sector severity table (example)"
+    source: "IBM CODB 2026 (illustrative example data)"
+    license_tier: public
+    format: csv
     schema: severity_sector_table
     version: "2026.1"
-    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    content_hash: "sha256:0399a6598c19c43027e7ce1b8a8706dc55173d8cfee2ae4d22c7d4f6877ea1fe"
     acquired_at: "2026-08-08"
     refresh_cadence: annual
-    tags: [ibm, severity, cost-per-record, sector]
+    tags: [ibm, severity, cost-per-event, sector, example]
     targets: ["calibration.apply_benchmarks"]
-    status: example
+    column_map:
+      source: source
+      sector: sector
+      metric: metric
+      value: value
+      units: units
+      notes: notes
+    status: active
 
-  # --- worked example: frequency ---------------------------------------
+  # --- example frequency table ----------------------------------------
   - id: "datasets/benchmarks/frequency/dbir-2026-sector"
     domain: benchmarks
     category: frequency
-    title: "Verizon DBIR 2026 — sector breach frequencies"
-    source: "Verizon (public)"
+    title: "Verizon DBIR 2026 — sector breach frequencies (example)"
+    source: "Verizon DBIR 2026 (illustrative example data)"
     license_tier: public
     format: csv
     schema: frequency_sector_table
     version: "2026.1"
-    content_hash: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    content_hash: "sha256:f28e27a7b546aa1de010acaadefb0e4e162f16fae549de8700bc1cb4b8e7653c"
     acquired_at: "2026-08-08"
     refresh_cadence: annual
-    tags: [dbir, frequency, breach, sector]
+    tags: [dbir, frequency, breach, sector, example]
     targets: ["calibration.apply_benchmarks"]
-    status: example
+    column_map:
+      source: source
+      sector: sector
+      metric: metric
+      value: value
+      units: units
+      notes: notes
+    status: active
 
   # --- worked example: firm history (feeds credibility, client tier) --
   - id: "datasets/history/engagements/atlas-2026"

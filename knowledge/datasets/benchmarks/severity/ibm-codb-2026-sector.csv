@@ -1,0 +1,5 @@
+source,sector,metric,value,units,notes
+IBM CODB 2026,Healthcare,severity_breach,525000,usd_per_event,"IBM 2026 avg healthcare breach cost per event (illustrative)"
+IBM CODB 2026,Financial Services,severity_breach,485000,usd_per_event,"IBM 2026 avg financial breach cost per event (illustrative)"
+IBM CODB 2026,Retail,severity_breach,410000,usd_per_event,"IBM 2026 avg retail breach cost per event (illustrative)"
+IBM CODB 2026,All,severity_breach,465000,usd_per_event,"IBM 2026 global avg breach cost per event (illustrative)"
