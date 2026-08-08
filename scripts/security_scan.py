@@ -74,7 +74,7 @@ ALLOWED = {
 
 # Paths / files skipped by design (docs, lockfiles, generated references).
 SKIP_DIRS = {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache", "data", "reports", "dist"}
-SKIP_FILES = {".secrets.baseline", ".gitignore", "SECURITY.md", "package-lock.json", "pnpm-lock.yaml", "README.md", "README_AGENT.md"}
+SKIP_FILES = {".secrets.baseline", ".gitignore", "SECURITY.md", "package-lock.json", "pnpm-lock.yaml", "README.md"}
 
 # Test fixtures intentionally contain placeholder secret-shaped strings,
 # and the scanner file itself defines the regex patterns it detects.
