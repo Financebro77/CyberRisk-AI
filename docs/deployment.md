@@ -99,9 +99,19 @@ python -c "import cyberrisk; print(cyberrisk.__version__)"
 
 ## 2. Docker deployment
 
-The repo ships a multi-stage `Dockerfile` and a `docker-compose.yml` that
-containerise the FastAPI app and serve the pre-built frontend from a single
-image.
+The repo ships a multi-stage `Dockerfile`, a `.dockerignore`, and a
+`docker-compose.yml` that containerise the app and serve **both** the
+FastAPI backend and the pre-built React frontend from a single image.
+
+Deployment is designed around five requirements:
+
+1. **Backend API startup** — uvicorn serves `/api/*` and `/docs`.
+2. **Web application startup** — the built SPA is served by the same
+   process on :8000.
+3. **Environment variable configuration** — read from `.env` via `env_file`.
+4. **Secure secret handling** — `.env` only; never baked into the image;
+   `.dockerignore` excludes secrets from the build context.
+5. **Local deployment** — a single `docker compose up --build`.
 
 ### 2.1 The shipped `Dockerfile`
 
@@ -112,22 +122,18 @@ Three stages:
   `.[web,reporting,knowledge]`.
 - **frontend** — `node:20-alpine` builds the React SPA (`app/frontend`).
 - **runtime** — the backend image plus the built SPA; runs as an
-  unprivileged user and health-checks `/api/health`.
+  unprivileged user (`USER cyberrisk`) and health-checks `/api/health`.
 
 ```dockerfile
-# ---- backend: build the Python package ----
 FROM python:3.12-slim AS backend
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential poppler-utils && rm -rf /var/lib/apt/lists/*
-
-COPY pyproject.toml .
+COPY pyproject.toml ./
 COPY src ./src
 RUN pip install --no-cache-dir -e ".[web,reporting,knowledge]"
 
-# ---- frontend: build the React app ----
 FROM node:20-alpine AS frontend
 WORKDIR /build
 COPY app/frontend/package.json app/frontend/package-lock.json ./
@@ -135,10 +141,15 @@ RUN npm ci
 COPY app/frontend ./
 RUN npm run build
 
-# ---- runtime: single image serving API + built UI ----
 FROM backend AS runtime
 COPY --from=frontend /build/dist /app/app/frontend/dist
+RUN useradd --create-home --uid 10001 cyberrisk \
+    && mkdir -p /app/data/output \
+    && chown -R cyberrisk:cyberrisk /app/data /app/app/frontend/dist
+USER cyberrisk
 EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"
 CMD ["python", "-m", "uvicorn", "cyberrisk.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
@@ -151,15 +162,16 @@ services:
       context: .
       dockerfile: Dockerfile
     image: cyberrisk:latest
+    container_name: cyberrisk
     ports:
       - "8000:8000"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
     env_file:
-      - .env                      # LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
+      - .env                       # OPENAI_API_KEY / DEEPSEEK_API_KEY + overrides
     volumes:
-      # Knowledge corpus + manifests (read-only) so ingested content persists.
       - ./knowledge/corpus:/app/knowledge/corpus:ro
       - ./knowledge/manifests:/app/knowledge/manifests:ro
-      # Generated reports (write).
       - ./data/output:/app/data/output
     restart: unless-stopped
 ```
@@ -167,19 +179,41 @@ services:
 ### 2.3 Run
 
 ```bash
+# 1. Configure your LLM provider
+cp .env.example .env        # set LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
+
+# 2. Build and start
 docker compose up --build
-# → http://localhost:8000
+
+# 3. Open
+#    http://localhost:8000        (UI + API)
+#    http://localhost:8000/docs   (API docs)
 ```
 
-### 2.4 Image build checklist
+Stop with `docker compose down` (add `-v` to also remove the named
+volumes). Rebuild after source changes with `docker compose up --build`.
+
+### 2.4 Secure secret handling
+
+- **`.env` is the single source of secrets.** Compose injects it via
+  `env_file`; the app reads it with `python-dotenv` at startup.
+- **`.dockerignore`** excludes `.env`, `.env.*`, `.venv/`, `node_modules/`,
+  `*.key`, `*.pem`, and other artifacts from the build context — so secrets
+  and regenerable files never enter an image or an image layer.
+- **Never** commit `.env` (gitignored), and never pass keys on the
+  `docker build` command line (they would be baked into a layer).
+- For production, prefer a secrets manager (see §3.1) that injects the same
+  variables at runtime.
+
+### 2.5 Image build checklist
 
 - **Secrets:** never bake keys into the image — always inject via
   `env_file` / environment.
 - **Volumes:** mount `knowledge/corpus` (read) and `data/output` (write) so
   knowledge persists and reports are retained.
 - **Non-root:** run as an unprivileged user in the runtime stage
-  (`USER 10001`).
-- **Healthcheck:** hit `GET /api/health` for liveness.
+  (`USER cyberrisk`).
+- **Healthcheck:** `GET /api/health` for liveness (used by orchestration).
 
 ---
 

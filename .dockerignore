@@ -1,0 +1,55 @@
+# =====================================================================
+# CyberRisk AI — .dockerignore
+#
+# Keeps the build context small and, critically, keeps SECRETS and
+# regenerable artifacts OUT of the Docker image build context.
+# =====================================================================
+
+# Secrets — never ship into the build context or image.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.token
+*.credentials
+
+# VCS & CI
+.git
+.gitignore
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.python-version
+
+# Node / frontend build artifacts (regenerated in the image)
+node_modules/
+app/frontend/node_modules/
+app/frontend/dist/
+
+# Local databases, vector stores, generated outputs (regenerable)
+*.db
+*.sqlite
+*.sqlite3
+knowledge/derived/
+data/output/
+reports/
+*.xlsx
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

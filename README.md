@@ -270,6 +270,35 @@ python -m uvicorn cyberrisk.api.main:app --port 8000
 
 Open <http://localhost:8000> — the UI is served from `app/frontend/dist`, and interactive API docs live at <http://localhost:8000/docs>.
 
+### Docker deployment
+
+The repo ships a `Dockerfile` and `docker-compose.yml` for a single-container
+deployment that serves **both** the API and the built frontend.
+
+```bash
+# 1. Configure your LLM provider
+cp .env.example .env        # set LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
+
+# 2. Build and start
+docker compose up --build
+```
+
+Open <http://localhost:8000> (UI + API) and <http://localhost:8000/docs>
+(API docs).
+
+**How it works:**
+
+- The **backend** stage installs the Python package (`.[web,reporting,knowledge]`).
+- The **frontend** stage builds the React SPA with `npm run build`.
+- The **runtime** stage serves both from a single uvicorn process, as a
+  non-root user, with a healthcheck on `/api/health`.
+- **Secrets** are injected only from `.env` via `env_file` (gitignored,
+  never baked into the image). `.dockerignore` excludes `.env`, `.venv`,
+  `node_modules`, and other artifacts from the build context.
+
+See [Deployment](docs/deployment.md) for full details, the cloud roadmap,
+and troubleshooting.
+
 ### Development mode (live-reloading)
 
 ```bash
@@ -658,6 +687,9 @@ docker-compose.yml      # containerised deployment
 
 ## License & Data Policy
 
-This repository is **source code and documentation only**. Confidential client materials, licensed cyber datasets, and generated reports are **not committed** — see `.gitignore`. Curated example benchmark data is included by design; licensed corpora must be sourced independently.
+This repository is licensed under the **[MIT License](LICENSE)** — permissive, so it can be embedded, extended, and used commercially with attribution. It is a good fit for a cyber risk / AI platform where the code is integrated into larger insurance and risk workflows.
+
+- **Source code and documentation only.** Confidential client materials, licensed cyber datasets, and generated reports are **not committed** — see `.gitignore`. Curated example benchmark data is included by design; licensed corpora must be sourced independently.
+- **No warranty.** The Software is provided "as is", without warranty of any kind (see the LICENSE file).
 
 *CyberRisk AI is a research and modelling platform, not licensed financial advice. Outputs are model estimates for analytical use, not guarantees of loss or recovery.*

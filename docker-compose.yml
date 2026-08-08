@@ -1,11 +1,23 @@
 # =====================================================================
-# CyberRisk AI — container deployment
+# CyberRisk AI — local deployment
 #
 #   docker compose up --build
-#   → http://localhost:8000   (UI + API)
-#   → http://localhost:8000/docs  (API docs)
+#   → http://localhost:8000        (UI + API)
+#   → http://localhost:8000/docs   (API docs)
 #
-# Secrets are injected from .env (gitignored) — never baked into the image.
+# Configuration:
+#   - Copy .env.example to .env and set your LLM provider + API key.
+#   - .env is the SINGLE source of secrets (gitignored, never committed,
+#     never baked into the image).  Compose injects it via env_file.
+#   - All other settings use sensible defaults.
+#
+# Requirements:
+#   1. Backend API startup      — uvicorn serves /api/* and /docs
+#   2. Web application startup  — the built SPA is served by the same
+#                                 process (single image, both on :8000)
+#   3. Environment variables    — read from .env (LLM_PROVIDER, keys, ...)
+#   4. Secure secret handling   — .env only; no secrets in images/files
+#   5. Local deployment         — `docker compose up`
 # =====================================================================
 
 services:
@@ -14,14 +26,18 @@ services:
       context: .
       dockerfile: Dockerfile
     image: cyberrisk:latest
+    container_name: cyberrisk
     ports:
       - "8000:8000"
+    environment:
+      # Explicitly forwarded so the app never needs the raw env_file name.
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
     env_file:
-      - .env                      # LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
+      - .env                       # OPENAI_API_KEY / DEEPSEEK_API_KEY + overrides
     volumes:
       # Knowledge corpus + manifests (read-only) so ingested content persists.
       - ./knowledge/corpus:/app/knowledge/corpus:ro
       - ./knowledge/manifests:/app/knowledge/manifests:ro
-      # Generated reports (write).
+      # Generated reports (write) — survive container restarts.
       - ./data/output:/app/data/output
     restart: unless-stopped
