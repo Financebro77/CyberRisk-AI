@@ -1,0 +1,11 @@
+# Document quality metadata — Verizon DBIR 2025
+document_id: verizon_dbir_2025
+title: "Verizon Data Breach Investigations Report 2025"
+publisher: "Verizon"
+publication_date: "2025-04-01"
+category: industry-report
+industry: all
+confidence_level: high
+usage: "RAG_only"
+calibration_allowed: false
+notes: "Breach trends, attack vectors, industry comparisons. Frequency statistics are informative for model discussion but are not direct calibration parameters; calibration from this source is reviewed case-by-case."

@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: nist_sp_800_53_r5
+title: NIST SP 800-53 Rev. 5
+publisher: NIST
+publication_date: 2020-09-23
+category: cybersecurity_framework
+industry: all
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: Detailed security controls (800+). Public domain. Risk-scoring control mapping.

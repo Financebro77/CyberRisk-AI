@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: iso_iec_27001_2022
+title: ISO/IEC 27001:2022
+publisher: ISO/IEC
+publication_date: 2022-10-25
+category: cybersecurity_framework
+industry: all
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: Information security governance. Proprietary standard — summarised guidance only, not the full text.

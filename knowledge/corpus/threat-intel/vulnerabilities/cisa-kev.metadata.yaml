@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: cisa_kev
+title: CISA Known Exploited Vulnerabilities Catalog
+publisher: CISA
+publication_date: ongoing
+category: vulnerability_database
+industry: all
+confidence_level: high
+usage: RAG + calibration
+calibration_allowed: true
+notes: Known exploited vulnerabilities. Public domain. Vulnerability prioritisation and exposure analysis.

@@ -96,12 +96,88 @@ engine uses in `src/cyberrisk/calibration.py`.
 
 ## 5. Current state
 
-- Folders scaffolded. No corpus content, no datasets, no pipeline code yet.
-- `manifests/corpus_manifest.yaml` and `dataset_manifest.yaml` exist with the
-  header + worked example from the design (entries are **examples**, marked as
-  such — nothing is registered as live).
-- `manifests/domains.yaml` lists the registered domains; new domains are added
-  there.
-- `schemas/` holds the four schema stubs (document, dataset, chunk, citation).
-- `access/` holds the tier policy and the catalog (empty by design until
-  content is registered).
+- `manifests/corpus_manifest.yaml` and `dataset_manifest.yaml` are the live
+  registries (example docs/datasets registered active).
+- `manifests/domains.yaml` lists the registered content-type domains; new
+  domains are added there.
+- `manifests/industry_taxonomy.yaml` lists the registered industries (Healthcare,
+  Finance, Retail, Manufacturing, Energy, Government, Technology), each with the
+  six uniform subcategories (Threat Landscape, Regulatory Requirements, Common
+  Attack Vectors, Typical Insurance Claims, Recommended Security Controls, Loss
+  Characteristics).  Industries are orthogonal to content-type domains: a
+  document keeps its `domain` AND gains an `industry` + `taxonomy` subcategory
+  list.  Adding an industry or subcategory is a YAML edit, never a code change.
+- `schemas/` holds the document/dataset/chunk/citation JSON Schemas.
+- `access/` holds the tier policy and the catalog.
+- `pipelines/` (ingest/embed/refresh) are implemented as
+  `src/cyberrisk/knowledge/` (ingest, embed, vector store, retrieval).
+
+## 5.5 Historical cyber incidents
+
+Incidents live as structured YAML under `corpus/incidents/curated/<incident>.yaml`
+with ten fields: `company`, `industry` (taxonomy key), `attack_type`,
+`attack_vector`, `root_cause`, `financial_loss` (USD), `operational_impact`,
+`regulatory_consequences`, `insurance_implications`, `lessons_learned`, plus
+`id` and `incident_date`.  To add an incident, drop a YAML file — the
+`IncidentIndex` discovers it and the standard ingest pipeline embeds its
+narrative for RAG.  The consultant can query incidents by field via the
+`search_incidents` tool; relevant incidents also surface in RAG context.
+
+## 6. Commands
+
+```powershell
+# 1. Ingest documents (PDF/MD/DOCX/HTML/TXT) -> derived/chunks + index
+python -m cyberrisk.knowledge.pipeline
+
+# 2. Embed chunks -> derived/vector.db (SQLite vector store)
+python -m cyberrisk.knowledge.embed_pipeline --force
+
+# 3. Query the vector store (retrieval only, no LLM)
+python -m cyberrisk.knowledge.rag "DORA ICT risk management obligations"
+
+# 4. AUTOMATIC UPDATE — drop new reports into knowledge/corpus/** and run:
+python -m cyberrisk.knowledge.update
+#   -> detects new files, auto-registers them, parses, chunks, embeds,
+#      updates the vector DB, avoids duplicates, logs, and writes a report
+#      (derived/update/report.json + derived/update/updates.log).
+python -m cyberrisk.knowledge.update --report   # print the last report
+
+# 5. VALIDATION — run all nine quality areas + report:
+python -m cyberrisk.knowledge.validate
+#   -> ingestion, chunk quality, embedding quality, semantic retrieval,
+#      source attribution, citation accuracy, duplicate detection, latency,
+#      hallucination resistance
+#   -> PASS/FAIL per area with metrics
+#   -> reports/knowledge_validation.md + derived/validation/report.json
+
+# 6. POPULATE — quality-gated ingestion of approved authoritative sources:
+python -m cyberrisk.knowledge.populate
+#   -> only documents whose source is registered (and approved) in
+#      knowledge/manifests/authoritative_sources.yaml are ingested
+#   -> unapproved sources are skipped + logged
+#   -> runs the 8-step workflow (register -> extract -> clean -> chunk ->
+#      index -> embed -> vector DB)
+#   -> reports/knowledge_population_report.md
+```
+
+## Authoritative sources + governance
+
+`manifests/authoritative_sources.yaml` is the APPROVAL GATE: a document is
+only ingested if its source is registered there as approved (with reliability,
+licensing, and per-stage suitability). `knowledge/mappings/control_evidence.yaml`
+documents which evidence sources support each control's model effect
+(frequency vs severity) — documentation only, NO parameter changes. Document
+quality metadata (publication date, confidence, usage, calibration_allowed)
+lives alongside each source's documents. The AI consultant must always
+distinguish external evidence / model output / professional judgement, and
+never fabricate statistics or regulations.
+
+The `update` command is the "no manual code changes" path: any supported file
+(PDF/MD/DOCX/HTML/TXT/YAML) dropped anywhere under `knowledge/corpus/` is
+auto-registered with defaults inferred from its path (domain, title, chunking,
+content hash), then ingested + embedded. Auto-registered entries can be
+enriched later in `corpus_manifest.yaml`. Both the update and the individual
+pipelines are incremental: re-running skips unchanged documents/chunks.
+The consultant agent retrieves context automatically when `derived/vector.db`
+exists, and the hallucination guard (`src/agent/safety.py`) verifies citations
+and document figures before an answer reaches a client.

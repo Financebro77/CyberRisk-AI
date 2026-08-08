@@ -1,0 +1,11 @@
+# Document quality metadata — NIST Cybersecurity Framework
+document_id: nist_csf_2_0
+title: "NIST Cybersecurity Framework 2.0"
+publisher: "NIST"
+publication_date: "2024-02-26"
+category: cybersecurity_framework
+industry: all
+confidence_level: high
+usage: "RAG_only"
+calibration_allowed: false
+notes: "Framework functions (Govern, Identify, Protect, Detect, Respond, Recover) and categories. Public domain. Suitable for risk-scoring control mapping and AI explanation."

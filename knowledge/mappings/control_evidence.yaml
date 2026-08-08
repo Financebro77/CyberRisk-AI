@@ -1,0 +1,77 @@
+# =====================================================================
+# KNOWLEDGE-TO-MODEL MAPPING — documentation only. NO parameter changes.
+# =====================================================================
+# Records which authoritative evidence sources support each control's
+# effect on the CyberRisk model.  This is a documented RELATIONSHIP for
+# auditability and consultant explanation — it does NOT modify any engine
+# parameter.
+#
+#   control            the security control
+#   evidence_sources   authoritative sources (from authoritative_sources.yaml)
+#   cyberrisk_impact   how the control affects the model:
+#                      Frequency reduction | Severity reduction
+#   affected_module    the engine module the effect operates through
+#
+# The affected modules are DOCUMENTED, not changed.  To change a parameter,
+# an explicit, approved calibration change is required.
+# =====================================================================
+
+controls:
+
+  # ---------------- Frequency-reduction controls ----------------
+  - control: "Multi-factor authentication"
+    evidence_sources: ["NIST Cybersecurity Framework (CSF)", "CIS Critical Security Controls", "Verizon Data Breach Investigations Report (DBIR)"]
+    cyberrisk_impact: "Frequency reduction"
+    affected_module: "frequency.py"
+    notes: "MFA materially reduces account-compromise events (BEC, credential theft)."
+
+  - control: "Network segmentation"
+    evidence_sources: ["NIST SP 800-53", "CIS Critical Security Controls"]
+    cyberrisk_impact: "Frequency reduction"
+    affected_module: "frequency.py"
+    notes: "Segmentation limits lateral movement and the reach of a single compromise."
+
+  - control: "Privileged access management"
+    evidence_sources: ["NIST Cybersecurity Framework (CSF)", "CIS Critical Security Controls", "MITRE ATT&CK"]
+    cyberrisk_impact: "Frequency reduction"
+    affected_module: "frequency.py"
+    notes: "Least privilege reduces the attack surface for privileged-account compromise."
+
+  - control: "Vulnerability / patch management"
+    evidence_sources: ["CISA Known Exploited Vulnerabilities (KEV)", "CIS Critical Security Controls", "NIST SP 800-53"]
+    cyberrisk_impact: "Frequency reduction"
+    affected_module: "frequency.py"
+    notes: "Patching known exploited vulnerabilities removes the most common initial access."
+
+  # ---------------- Severity-reduction controls ----------------
+  - control: "Immutable backups"
+    evidence_sources: ["CISA Known Exploited Vulnerabilities (KEV)"]
+    cyberrisk_impact: "Severity reduction"
+    affected_module: "severity.py"
+    notes: "Immutable, tested backups shorten recovery and reduce ransom dependence (CISA KEV catalog + CISA ransomware guidance)."
+
+  - control: "Incident response readiness"
+    evidence_sources: ["NIST Cybersecurity Framework (CSF)", "NIST SP 800-53"]
+    cyberrisk_impact: "Severity reduction"
+    affected_module: "severity.py"
+    notes: "Tested IR reduces containment time and total loss."
+
+  - control: "Endpoint detection and response (EDR)"
+    evidence_sources: ["NIST SP 800-53", "MITRE ATT&CK", "CIS Critical Security Controls"]
+    cyberrisk_impact: "Severity reduction"
+    affected_module: "severity.py"
+    notes: "EDR shortens dwell time and limits the blast radius of an event."
+
+  - control: "Backup frequency and DR testing"
+    evidence_sources: ["CIS Critical Security Controls", "NIST SP 800-53", "Verizon Data Breach Investigations Report (DBIR)"]
+    cyberrisk_impact: "Severity reduction"
+    affected_module: "severity.py"
+    notes: "Frequent, tested backups reduce business-interruption and recovery cost."
+
+# ---------------------------------------------------------------------
+# Mapping rules
+# ---------------------------------------------------------------------
+# - evidence_sources must reference a source in authoritative_sources.yaml.
+# - cyberrisk_impact is one of the two documented effects above.
+# - affected_module is documentation of where the effect operates; it is
+#   NOT modified by this mapping.

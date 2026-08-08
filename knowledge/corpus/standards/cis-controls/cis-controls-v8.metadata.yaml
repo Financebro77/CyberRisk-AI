@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: cis_controls_v8
+title: CIS Critical Security Controls v8
+publisher: CIS
+publication_date: 2021-05-18
+category: cybersecurity_framework
+industry: all
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: Practical mitigation recommendations, prioritised. Open license.

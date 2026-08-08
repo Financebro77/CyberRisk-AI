@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: mitre_attack
+title: MITRE ATT&CK
+publisher: MITRE
+publication_date: ongoing
+category: threat_intelligence
+industry: all
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: Attack techniques, threat actor behaviour, control mapping. Open license.
