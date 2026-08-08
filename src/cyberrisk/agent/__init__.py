@@ -1,4 +1,4 @@
-"""AI-powered cyber risk consultant agent (DeepSeek layer).
+"""AI-powered cyber risk consultant agent (provider-agnostic LLM layer).
 
 Sits ON TOP of the quantitative risk engine (src/cyberrisk).  It adds a
 tool-calling LLM agent that:
@@ -15,12 +15,16 @@ consumes it read-only through the tool layer in tools.py.
 
 Architecture:
 
-    User -> chat interface (app.py / run_chat.py)
-         -> DeepSeekClient (deepseek_client.py)
+    User -> chat interface (app.py / run_chat.py / cli.py)
+         -> LLM client (cyberrisk/llm: OpenAI or DeepSeek via the factory)
          -> CyberRiskAgent (agent_controller.py)
          -> tools (tools.py)
          -> existing engine (compute_score -> simulate -> compute_metrics
                              -> transform_events_to_years -> write_report)
+
+The concrete provider is chosen by the LLM_PROVIDER env var in
+cyberrisk/llm/factory.py.  ``deepseek_client`` remains as a backward-
+compatibility alias for the DeepSeek provider.
 """
 
 from __future__ import annotations

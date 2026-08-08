@@ -1,11 +1,12 @@
 """Terminal chat interface for the CyberRisk consultant agent.
 
 Runs the same CyberRiskAgent the Streamlit app uses, without a browser.
-Useful for quick testing of the DeepSeek integration and the tool loop.
+Useful for quick testing of the LLM integration and the tool loop.
 
     python -m cyberrisk.agent.run_chat
 
-Requires DEEPSEEK_API_KEY (via .env or the environment).
+Requires the active provider's API key (via .env or the environment); the
+provider is chosen by LLM_PROVIDER (openai | deepseek).
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from __future__ import annotations
 import sys
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
-from cyberrisk.agent.deepseek_client import DeepSeekClient
+from cyberrisk.llm.factory import create_llm_client
 
 
 def _render_metrics(answer: str) -> None:
@@ -24,15 +25,15 @@ def _render_metrics(answer: str) -> None:
 
 def main() -> None:
     try:
-        client = DeepSeekClient()
+        client = create_llm_client()
     except RuntimeError as exc:
         print(f"[config error] {exc}", file=sys.stderr)
         sys.exit(1)
 
     agent = CyberRiskAgent(client=client)
     print("=" * 72)
-    print("CYBERRISK CONSULTANT AGENT  (DeepSeek)")
-    print(f"Model: {client.model_name}   Type 'exit' or Ctrl-C to quit")
+    print("CYBERRISK CONSULTANT AGENT")
+    print(f"Provider model: {client.model_name}   Type 'exit' or Ctrl-C to quit")
     print("=" * 72)
     print()
     print("Try:  Assess a healthcare company with weak MFA and limited segmentation.")

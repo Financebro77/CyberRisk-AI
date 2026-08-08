@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
-from cyberrisk.agent.deepseek_client import DeepSeekClient
+from cyberrisk.llm.factory import is_configured
 
 # Repo root: src/cyberrisk/cli.py -> src/cyberrisk -> src -> repo root.
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -77,8 +77,8 @@ def _retrieval_ok() -> bool:
 
 
 def _llm_ok() -> bool:
-    """LLM availability: a DeepSeek API key is configured."""
-    return DeepSeekClient.is_configured()
+    """LLM availability: the active provider's API key is configured."""
+    return is_configured()
 
 
 def _tick(ok: bool) -> str:
@@ -109,7 +109,11 @@ def _print_startup() -> None:
     print(f"  {_tick(_llm_ok())} LLM Connection")
     print()
     if not _llm_ok():
-        print("  Note: set DEEPSEEK_API_KEY (in .env or the environment) to enable the LLM.")
+        print(
+            "  Note: set LLM_PROVIDER=openai|deepseek and the matching key "
+            "(OPENAI_API_KEY or DEEPSEEK_API_KEY, in .env or the environment) "
+            "to enable the LLM."
+        )
     print("Ready.")
     print()
 

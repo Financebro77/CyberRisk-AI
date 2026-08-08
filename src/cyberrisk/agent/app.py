@@ -4,9 +4,10 @@ Launch with:
 
     python -m streamlit run src/cyberrisk/agent/app.py
 
-The sidebar shows the DeepSeek configuration status and lets the user pick
-the model.  Chat history lives in st.session_state; each message runs the
-same CyberRiskAgent tool loop as the terminal CLI.
+The sidebar shows the LLM configuration status and lets the user pick the
+model.  Chat history lives in st.session_state; each message runs the
+same CyberRiskAgent tool loop as the terminal CLI.  The LLM provider is
+chosen by the LLM_PROVIDER env var (openai | deepseek).
 
 Every quantitative figure in the conversation comes from the CyberRisk
 engine via the agent's tools -- the LLM never supplies numbers itself.
@@ -20,8 +21,9 @@ from pathlib import Path
 import streamlit as st
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
-from cyberrisk.agent.deepseek_client import ENV_API_KEY, ENV_BASE_URL, ENV_MODEL, DeepSeekClient
+from cyberrisk.agent.deepseek_client import ENV_BASE_URL, ENV_MODEL
 from cyberrisk.agent.schemas import AgentConfig
+from cyberrisk.llm.factory import get_provider_name, is_configured
 
 st.set_page_config(page_title="CyberRisk Consultant", page_icon="🛡️", layout="centered")
 
@@ -45,9 +47,10 @@ st.session_state.setdefault("messages", [])
 def get_agent() -> CyberRiskAgent | None:
     """Build (once) and return the configured agent."""
     if st.session_state.agent is None:
-        key = os.getenv(ENV_API_KEY)
-        if not key:
+        if not is_configured():
             return None
+        # The provider defaults to DeepSeek; its model is overridable via
+        # DEEPSEEK_MODEL.  An OpenAI setup is selected by LLM_PROVIDER=openai.
         config = AgentConfig(model=os.getenv(ENV_MODEL, "deepseek-chat"))
         st.session_state.agent = CyberRiskAgent(config=config)
     return st.session_state.agent
@@ -62,20 +65,33 @@ with st.sidebar:
     st.caption("Marsh/Aon-style AI cyber risk adviser on top of the CyberRisk engine.")
     st.divider()
 
-    st.subheader("DeepSeek configuration")
-    if DeepSeekClient.is_configured():
+    st.subheader("LLM configuration")
+    try:
+        provider = get_provider_name()
+    except (RuntimeError, ValueError):
+        provider = "unset"
+    st.caption(f"Provider: **{provider}** (set `LLM_PROVIDER=openai` or `=deepseek` to switch)")
+    if is_configured():
         st.success("API key detected ✓")
         st.text_input(
             "Model",
             value=os.getenv(ENV_MODEL, "deepseek-chat"),
             key="model",
-            help="deepseek-chat or deepseek-reasoner",
+            help="Provider model (e.g. deepseek-chat / deepseek-reasoner / gpt-4o)",
         )
-        st.text_input("Base URL", value=os.getenv(ENV_BASE_URL, "https://api.deepseek.com"), key="base_url", disabled=True)
+        st.text_input(
+            "Base URL",
+            value=os.getenv(ENV_BASE_URL, "https://api.deepseek.com"),
+            key="base_url",
+            disabled=True,
+        )
     else:
-        st.error(f"`{ENV_API_KEY}` is not set. Create a `.env` file in the project root "
-                 f"(see `.env.example`) with `{ENV_API_KEY}=sk-...`, then restart.")
-        st.code("DEEPSEEK_API_KEY=sk-...", language="bash")
+        st.error(
+            f"No LLM key is configured. Create a `.env` file in the project root "
+            f"(see `.env.example`) with `LLM_PROVIDER=openai` + `OPENAI_API_KEY=sk-...` "
+            f"or `LLM_PROVIDER=deepseek` + `DEEPSEEK_API_KEY=sk-...`, then restart."
+        )
+        st.code("LLM_PROVIDER=deepseek\nDEEPSEEK_API_KEY=sk-...", language="bash")
 
     st.divider()
     n_years = st.slider("Simulation years (Monte Carlo)", 10_000, 200_000, 100_000, step=10_000)

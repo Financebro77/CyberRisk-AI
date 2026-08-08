@@ -1,10 +1,10 @@
-"""Agent controller: the DeepSeek tool-calling loop.
+"""Agent controller: the LLM tool-calling loop.
 
-Owns the conversation memory, the tool registry and the DeepSeek client,
-and runs the loop:
+Owns the conversation memory, the tool registry and the LLM client (chosen
+by the LLM_PROVIDER factory -- OpenAI or DeepSeek), and runs the loop:
 
     1. Append the user's latest message to memory.
-    2. Send the full message history + tool schemas to DeepSeek.
+    2. Send the full message history + tool schemas to the provider.
     3. If the model requested tools, execute each one (validated args),
        append the results as `role: tool` messages, and go back to 2.
     4. If the model produced text, that is the consultant's answer -- run
@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from cyberrisk.agent.deepseek_client import DeepSeekClient
 from cyberrisk.agent.disclosure import append_disclosure
 from cyberrisk.agent.memory import ClientFacts, ConversationMemory
 from cyberrisk.agent.model_mechanics import explain_model_mechanics
@@ -38,6 +37,8 @@ from cyberrisk.agent.tools import (
     run_loss_simulation,
     search_incidents,
 )
+from cyberrisk.llm.base import LLMClient
+from cyberrisk.llm.factory import create_llm_client
 
 # Tool name -> callable(brief_fields: dict, extra_args: dict) -> dict
 _TOOL_IMPLEMENTATIONS = {
@@ -89,17 +90,18 @@ _BRIEF_KEYS = {
 
 
 class CyberRiskAgent:
-    """The DeepSeek-powered cyber risk consultant."""
+    """The LLM-powered cyber risk consultant (provider-agnostic)."""
 
     def __init__(
         self,
-        client: DeepSeekClient | None = None,
+        client: LLMClient | None = None,
         config: AgentConfig | None = None,
         memory: ConversationMemory | None = None,
         facts: ClientFacts | None = None,
     ) -> None:
         self.config = config or AgentConfig()
-        self.client = client or DeepSeekClient(self.config)
+        # Provider picked by LLM_PROVIDER (openai | deepseek) via the factory.
+        self.client = client or create_llm_client(self.config)
         self.memory = memory or ConversationMemory()
         self.facts = facts or ClientFacts()
         # Tool trace for the current turn: every tool that ran this turn,

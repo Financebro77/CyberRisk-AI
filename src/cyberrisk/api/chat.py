@@ -19,7 +19,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from cyberrisk.agent.agent_controller import CyberRiskAgent
-from cyberrisk.agent.deepseek_client import DeepSeekClient
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 

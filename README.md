@@ -20,11 +20,11 @@ python -m venv .venv
 # macOS / Linux:
 # source .venv/bin/activate
 
-# 3. Install with the agent extras (DeepSeek + Streamlit)
+# 3. Install with the agent extras (OpenAI / DeepSeek + Streamlit)
 pip install -e ".[agent]"
 
 # 4. Configure your API key
-cp .env.example .env        # then edit .env and paste your DeepSeek key
+cp .env.example .env        # then edit .env and set LLM_PROVIDER + your key
 
 # 5. Launch the interactive consultant
 cyberrisk
@@ -32,7 +32,7 @@ cyberrisk
 
 That's it — you should be in the interactive consultant within five minutes. If `cyberrisk` isn't on your PATH, run `python -m cyberrisk.cli` instead.
 
-> **No API key yet?** The quantitative engine (scoring, Monte Carlo simulation, VaR/ES, insurance structuring) runs entirely offline with **no key required** — only the AI consultant layer needs a DeepSeek key. See [Python API usage](#c-python-api-usage) to run the engine without an LLM.
+> **No API key yet?** The quantitative engine (scoring, Monte Carlo simulation, VaR/ES, insurance structuring) runs entirely offline with **no key required** — only the AI consultant layer needs an LLM key (OpenAI or DeepSeek). See [Python API usage](#c-python-api-usage) to run the engine without an LLM.
 
 ---
 
@@ -123,7 +123,7 @@ The pipeline is fully deterministic when seeded: the same client profile always 
 | Statistical modelling | Scenario frequency–severity distributions, copula dependency modelling |
 | ML / deep learning | **PyTorch** *(planned — for dense embedding models via `EmbedderRegistry`; engine currently runs on NumPy/SciPy)* |
 | Vector database | SQLite-backed vector store (`knowledge/derived/vector.db`) — zero-dependency, SQL-queryable, regenerable |
-| LLM integration | **DeepSeek** via the OpenAI-compatible SDK (`openai` client) |
+| LLM integration | **OpenAI or DeepSeek**, selected via `LLM_PROVIDER` — pluggable `src/cyberrisk/llm/` layer (both use the `openai` SDK; DeepSeek via its OpenAI-compatible endpoint) |
 | Embeddings | Lightweight `HashEmbedder` with content-hash dedup, plus a pluggable `EmbedderRegistry` for swapping in dense models |
 | Web / UI | **Streamlit** chat app, **FastAPI** + Uvicorn API layer, **React/Vite** frontend |
 | Reporting | Excel workbooks (openpyxl / xlsxwriter), matplotlib figures |
@@ -142,7 +142,7 @@ The pipeline is fully deterministic when seeded: the same client profile always 
 | **Python** | **3.10 or newer** (3.11/3.12 recommended; developed on 3.12/3.13) |
 | **Operating system** | Windows 10/11, macOS, or Linux (POSIX shell examples assume Unix; PowerShell variants are noted inline) |
 | **Hardware** | Any modern machine; the Monte Carlo engine is CPU-bound and runs comfortably on a laptop (200,000 simulated years in a few seconds) |
-| **Internet** | Required only for the AI consultant layer (DeepSeek API). The engine and web UI run fully offline. |
+| **Internet** | Required only for the AI consultant layer (OpenAI / DeepSeek API). The engine and web UI run fully offline. |
 | **Node.js** | Optional — only needed to build/run the React frontend in development. The pre-built `web/frontend/dist` is served by FastAPI, so this is skippable. |
 
 **Core dependencies** (installed automatically from `pyproject.toml`):
@@ -160,7 +160,7 @@ The pipeline is fully deterministic when seeded: the same client profile always 
 
 | Extra | `pip install -e ".[...]"` | Adds |
 |---|---|---|
-| `agent` | `.[agent]` | AI consultant: DeepSeek (`openai`), `python-dotenv`, **Streamlit** |
+| `agent` | `.[agent]` | AI consultant: OpenAI / DeepSeek (`openai` SDK), `python-dotenv`, **Streamlit** |
 | `web` | `.[web]` | FastAPI + Uvicorn web layer |
 | `reporting` | `.[reporting]` | Excel report generation (`openpyxl`, `xlsxwriter`) |
 | `knowledge` | `.[knowledge]` | Document parsing for the knowledge base (`pypdf`, `python-docx`) |
@@ -211,26 +211,54 @@ python -c "import cyberrisk; print(cyberrisk.__version__)"   # → 0.1.0
    cp .env.example .env
    ```
 
-2. **Open `.env`** and add your API key:
+2. **Open `.env`** and set the provider plus your API key:
 
    ```ini
-   # Required — your DeepSeek API key (https://platform.deepseek.com)
-   DEEPSEEK_API_KEY=sk-your-key-here
+   # LLM provider: "openai" or "deepseek" (defaults to whichever key is set)
+   LLM_PROVIDER=deepseek
 
-   # Optional — override the API endpoint (default https://api.deepseek.com)
-   # DEEPSEEK_BASE_URL=https://api.deepseek.com
+   # --- DeepSeek (https://platform.deepseek.com) ---
+   DEEPSEEK_API_KEY=sk-your-deepseek-key-here
 
-   # Optional — model to use (default deepseek-chat; deepseek-reasoner for R1)
-   # DEEPSEEK_MODEL=deepseek-chat
+   # --- OpenAI (https://platform.openai.com) — only if LLM_PROVIDER=openai ---
+   # OPENAI_API_KEY=sk-your-openai-key-here
    ```
 
 **Which keys are required vs optional:**
 
 | Variable | Required? | Notes |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | **Required** for the AI consultant (CLI/chat/web) | Optional to skip if you only run the engine directly |
+| `LLM_PROVIDER` | **Required** to switch providers | `openai` or `deepseek`. If unset, the provider is inferred from whichever key is present |
+| `DEEPSEEK_API_KEY` | **Required** for the DeepSeek provider | The AI consultant (CLI/chat/web) needs one of the two keys set |
 | `DEEPSEEK_BASE_URL` | Optional | Defaults to `https://api.deepseek.com`; override for a proxy |
 | `DEEPSEEK_MODEL` | Optional | Defaults to `deepseek-chat`; use `deepseek-reasoner` for reasoning |
+| `OPENAI_API_KEY` | **Required** for the OpenAI provider | The AI consultant (CLI/chat/web) needs one of the two keys set |
+| `OPENAI_MODEL` | Optional | Defaults to `gpt-4o-mini`; any GPT model id |
+| `OPENAI_BASE_URL` | Optional | Override for a compatible gateway / proxy |
+
+#### Switching LLM providers
+
+The consultant runs on whichever provider `LLM_PROVIDER` names. Set it in `.env`
+(or export it) and restart the app — the client is built once per agent.
+
+```ini
+# DeepSeek (default)
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-...
+
+# or OpenAI
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+```
+
+If `LLM_PROVIDER` is left blank, the provider is inferred from whichever key
+is set — set only `DEEPSEEK_API_KEY` and you get DeepSeek, set only
+`OPENAI_API_KEY` and you get OpenAI. The abstraction lives in
+[`src/cyberrisk/llm/`](#project-layout): a common `LLMClient` interface, one
+provider per file (`openai_provider.py`, `deepseek_provider.py`), and a
+factory (`factory.py`) that picks the provider. Adding a third provider means
+implementing the interface and registering it in the factory — the agent
+controller, CLI, Streamlit app, and web API are unchanged.
 
 **Security rules for secrets:**
 
@@ -365,13 +393,13 @@ print(f"VaR99: ${metrics.var_99/1e6:,.2f}M")
 print(f"ES99:  ${metrics.es_99/1e6:,.2f}M")
 ```
 
-**AI consultant (requires `DEEPSEEK_API_KEY`):**
+**AI consultant (requires the active provider's API key — see [Switching LLM providers](#switching-llm-providers)):**
 
 ```python
 # consultant_offline_check.py
 from cyberrisk.agent.agent_controller import CyberRiskAgent
 
-agent = CyberRiskAgent()                      # connects to DeepSeek
+agent = CyberRiskAgent()                      # provider from LLM_PROVIDER env
 answer = agent.chat(
     "Assess a $400M healthcare technology firm holding 10M patient records "
     "with partial MFA and weekly backups."
@@ -669,11 +697,11 @@ An update report is written to `knowledge/derived/update/` and, after a quality-
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| **`[config error] ... DEEPSEEK_API_KEY` / "LLM Connection ✗"** on launch | No API key configured | Copy `.env.example` → `.env` and set `DEEPSEEK_API_KEY`. Alternatively `export DEEPSEEK_API_KEY=sk-...`. |
+| **`[config error] ... OPENAI_API_KEY / DEEPSEEK_API_KEY` / "LLM Connection ✗"** on launch | No provider key configured (or `LLM_PROVIDER` names a provider whose key is missing) | Copy `.env.example` → `.env`, set `LLM_PROVIDER=openai` or `=deepseek`, and set the matching `OPENAI_API_KEY` / `DEEPSEEK_API_KEY`. Alternatively `export` the key. |
 | **`ModuleNotFoundError: No module named 'cyberrisk'`** | Package not installed | `pip install -e ".[agent]"` from the repo root. Check you're in the venv (`.venv\Scripts\Activate.ps1` / `source .venv/bin/activate`). |
 | **`ModuleNotFoundError: ... openai / streamlit / fastapi / uvicorn / openpyxl`** | An optional extra is missing | Install the matching extra: `pip install -e ".[agent]"` (LLM/Streamlit), `".[web]"` (FastAPI), `".[reporting]"` (Excel), `".[knowledge]"` (PDF/DOCX parsing). |
 | **Port already in use** | Uvicorn on :8000 or Vite on :5173 is already running | Find and stop the process, or change the port: `python -m uvicorn cyberrisk.api.main:app --port 8001` and update the Vite proxy target in `web/frontend/vite.config.ts`. |
-| **`RuntimeError` when calling `CyberRiskAgent()`** | LLM not configured or API unreachable | Check `DEEPSEEK_API_KEY`, network access to `https://api.deepseek.com`, and that your key is valid/active. |
+| **`RuntimeError` when calling `CyberRiskAgent()`** | LLM not configured or API unreachable | Check `LLM_PROVIDER` and the matching key (`DEEPSEEK_API_KEY` / `OPENAI_API_KEY`), network access to the provider endpoint, and that your key is valid/active. |
 | **Model not loading / "Retrieval System ✗"** | Vector DB missing or stale | The store regenerates on demand; run `python -m cyberrisk.knowledge.update` to rebuild `knowledge/derived/vector.db`. |
 | **Windows: `UnicodeEncodeError` / missing `✓` `✗` glyphs** | Legacy console codepage (GBK etc.) | The CLI already falls back to `[OK]`/`[--]` on legacy codepages. Use Windows Terminal for full glyph support. |
 | **Agent says "insufficient information" instead of modelling** | The completeness guard is working as designed | Provide the missing facts (industry, revenue, controls, etc.) — the agent refuses to model on guesses. |
@@ -714,7 +742,8 @@ src/cyberrisk/
 ├── copulas.py          # dependency modelling between scenarios
 ├── policy_transform.py # insurance structure: retained vs transferred
 ├── knowledge/          # ingestion, chunking, embedding, vector store, RAG
-├── agent/              # AI consultant: DeepSeek client, tools, controller, UI
+├── agent/              # AI consultant: LLM client (via llm/), tools, controller, UI
+├── llm/                # LLM provider abstraction: base interface, OpenAI/DeepSeek providers, factory
 └── api/                # FastAPI web layer
 
 web/
