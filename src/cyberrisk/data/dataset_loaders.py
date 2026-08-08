@@ -33,7 +33,6 @@ from cyberrisk.calibration import ModelConfig
 from cyberrisk.data.manifest import (
     DatasetManifest,
     DatasetManifestEntry,
-    default_dataset_root,
     default_manifest_path,
     load_dataset_manifest,
     resolve_dataset_path,

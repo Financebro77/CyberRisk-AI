@@ -28,7 +28,6 @@ from cyberrisk.credibility import FirmExperience, apply_credibility
 from cyberrisk.metrics import compute_metrics
 from cyberrisk.simulation import simulate
 from cyberrisk.uncertainty import (
-    UncertaintySpec,
     load_uncertainty_spec,
     run_uncertainty_analysis,
 )

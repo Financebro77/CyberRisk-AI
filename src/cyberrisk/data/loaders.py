@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cyberrisk.data.schemas import BenchmarkRecord, BenchmarkSet
+from cyberrisk.data.schemas import BenchmarkSet
 from cyberrisk.scoring import CompanyProfile
 
 

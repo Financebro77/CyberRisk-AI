@@ -8,7 +8,6 @@ lock that in and verify the block is never duplicated.
 
 from __future__ import annotations
 
-import numpy as np
 
 from cyberrisk.agent.disclosure import (
     DISCLOSURE_HEADING,

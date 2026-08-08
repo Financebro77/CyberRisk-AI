@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import numpy as np
 
 from cyberrisk.calibration import load_config
 from cyberrisk.reporting.excel import write_report

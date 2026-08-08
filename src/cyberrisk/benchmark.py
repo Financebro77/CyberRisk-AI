@@ -19,10 +19,9 @@ evidence scales, keeping the whole thing explainable.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 import yaml
 from pydantic import BaseModel, Field
 

@@ -155,7 +155,6 @@ def test_narrative_renders_citation(index: IncidentIndex):
 
 
 def test_industry_validated_against_taxonomy():
-    from cyberrisk.knowledge.incidents import Incident
 
     taxonomy = load_industry_taxonomy()
     assert taxonomy.is_known_industry("healthcare")

@@ -12,10 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pytest
 
-from cyberrisk.knowledge.config import load_ingest_config
 from cyberrisk.knowledge.embedders import HashEmbedder
 from cyberrisk.knowledge.rag import RetrievedChunk, Retriever
 from cyberrisk.knowledge.vector_store import VectorStore

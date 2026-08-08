@@ -172,7 +172,6 @@ def test_review_scenario_composite_in_expected_band():
 
 def test_review_scenario_insurance_residual_consistent():
     """For the reviewed profile, the residual identity holds end-to-end."""
-    from cyberrisk.scoring import CompanyProfile, compute_score, load_scoring_weights
 
     policy = PolicyInput(
         per_occurrence_deductible=1_000_000.0,

@@ -254,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"documents skipped (unapproved): {len(report.documents_skipped_unapproved)}")
     print(f"chunks created: {report.chunks_created}")
     print(f"embeddings generated: {report.embeddings_generated}")
-    print(f"report: reports/knowledge_population_report.md")
+    print("report: reports/knowledge_population_report.md")
     return 0
 
 

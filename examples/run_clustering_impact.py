@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 
 from cyberrisk.calibration import load_config
 from cyberrisk.metrics import compute_metrics
@@ -80,17 +79,17 @@ def main() -> None:
 
     # --- 4. Plain-English summary -------------------------------------------
     sec("4. SUMMARY (WHAT A CONSULTANT WOULD SAY)")
-    print(f"   * Your incident counts are bursty, not regular: the annual count")
+    print("   * Your incident counts are bursty, not regular: the annual count")
     print(f"     varies up to {max((s.frequency.freq_dispersion or 1) for s in cfg.scenarios):.0f}x"
           f" as much as a perfectly regular pattern.")
     print(f"   * Roughly one year in {int(1/cfg.catastrophe_probability)}, several things go wrong at once and")
     print(f"     everything costs ~{cfg.catastrophe_multiplier_mean:.0f}x more.  That is where the")
-    print(f"     tail risk lives.")
+    print("     tail risk lives.")
     print(f"   * Adding catastrophe years raises ES99 by "
           f"{100*(m_on.es_99/m_off.es_99-1):.0f}% and the 1-in-1000 PML by "
           f"{100*(m_on.p99_9/m_off.p99_9-1):.0f}%.")
-    print(f"   * A limit sized off the no-clustering model would be too low in the")
-    print(f"     catastrophe years that actually drive claims.")
+    print("   * A limit sized off the no-clustering model would be too low in the")
+    print("     catastrophe years that actually drive claims.")
 
 
 if __name__ == "__main__":

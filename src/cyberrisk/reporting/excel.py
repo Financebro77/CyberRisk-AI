@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from cyberrisk.metrics import RiskMetrics, compute_metrics
+from cyberrisk.metrics import compute_metrics
 from cyberrisk.simulation import SimulationResult
 
 

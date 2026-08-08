@@ -9,7 +9,6 @@ contracts — if a directive is removed, the consultant loses the behaviour.
 
 from __future__ import annotations
 
-import pytest
 
 from cyberrisk.agent.prompts import (
     RAG_RULES,

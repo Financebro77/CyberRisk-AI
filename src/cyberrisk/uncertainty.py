@@ -32,7 +32,7 @@ import yaml
 from pydantic import BaseModel, Field, model_validator
 
 from cyberrisk.calibration import ModelConfig
-from cyberrisk.metrics import compute_metrics, quantile
+from cyberrisk.metrics import compute_metrics
 from cyberrisk.simulation import simulate
 
 

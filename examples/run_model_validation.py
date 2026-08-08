@@ -25,7 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from cyberrisk.calibration import load_config
-from cyberrisk.metrics import compute_metrics, expected_shortfall
+from cyberrisk.metrics import compute_metrics
 from cyberrisk.simulation import simulate
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -249,7 +249,7 @@ def test_extreme_events(config) -> None:
 
     # Return-period PML basis (Phase-1 replacement for the sample max)
     print(f"E    Max single-year loss (500k years): {fmt_usd(m.max_single_year)}  [sample artifact, NOT a PML]")
-    print(f"E    Return-period PML:")
+    print("E    Return-period PML:")
     print(f"E      P99.0 (1-in-100 yr)  : {fmt_usd(m.p99_0)}")
     print(f"E      P99.5 (1-in-200 yr)  : {fmt_usd(m.p99_5)}")
     print(f"E      P99.9 (1-in-1000 yr) : {fmt_usd(m.p99_9)}")
@@ -260,8 +260,8 @@ def test_extreme_events(config) -> None:
     k = int(0.02 * len(tail))
     xi = hill_estimator(tail, k)
     print(f"E    Hill index (top 2%): alpha = {1/xi:.2f} (xi = {xi:.2f})")
-    print(f"E      -> alpha < 2 implies infinite variance / very heavy tail")
-    print(f"E      -> alpha ~ 2-4 implies heavy but finite-var tail")
+    print("E      -> alpha < 2 implies infinite variance / very heavy tail")
+    print("E      -> alpha ~ 2-4 implies heavy but finite-var tail")
 
     # LEC with markers at VaR95/99 and P99.5
     from cyberrisk.metrics import exceedance_curve
@@ -308,7 +308,7 @@ def test_dependence(config) -> None:
     t_cfg = config.model_copy(update={"copula_model": "student_t", "copula_nu": 5.0})
     m_g = compute_metrics(simulate(g_cfg, n_years=200_000, dependence="dependent"))
     m_t = compute_metrics(simulate(t_cfg, n_years=200_000, dependence="dependent"))
-    print(f"\nF2   Student-t(nu=5) vs Gaussian (200k years, same loadings):")
+    print("\nF2   Student-t(nu=5) vs Gaussian (200k years, same loadings):")
     print(f"     EAL   t {fmt_usd(m_t.eal)}  | g {fmt_usd(m_g.eal)}  "
           f"(ratio {m_t.eal/m_g.eal:.4f})")
     print(f"     ES99  t {fmt_usd(m_t.es_99)}  | g {fmt_usd(m_g.es_99)}  "
@@ -317,7 +317,6 @@ def test_dependence(config) -> None:
           f"(ratio {m_t.p99_9/m_g.p99_9:.4f})")
 
     # F3: copula-level upper-tail dependence chi(0.99)
-    from scipy.stats import rankdata
     from cyberrisk.copulas import dependent_uniforms, student_t_uniforms
 
     loadings = np.array([s.copula_loading for s in config.scenarios])
@@ -333,7 +332,7 @@ def test_dependence(config) -> None:
 
     chi_g = np.mean([chi(ug) for _ in range(1)])
     chi_t = np.mean([chi(ut) for _ in range(1)])
-    print(f"\nF3   Copula upper-tail dependence chi(0.99) (same loadings):")
+    print("\nF3   Copula upper-tail dependence chi(0.99) (same loadings):")
     print(f"     Gaussian {chi_g:.4f}  |  Student-t(nu=5) {chi_t:.4f}  "
           f"(ratio {chi_t/chi_g:.2f}x)")
 
@@ -366,11 +365,11 @@ def main() -> None:
 
     sec("VALIDATION SUMMARY")
     print(f"A  RNG / distributions     : {'PASS' if ok_rng else 'FAIL'}")
-    print(f"B  Convergence             : see table (target |ES drift|<5%)")
+    print("B  Convergence             : see table (target |ES drift|<5%)")
     print(f"C  EAL < VaR < ES ordering : {'PASS' if ok_order else 'FAIL'}")
     print("D  Shape / E  tail / F dependence : see sections above")
-    print(f"F2 Student-t vs Gaussian tail ratios: see F section "
-          f"(EAL ~1.00, ES99/P99.9 > 1 expected at deep quantiles)")
+    print("F2 Student-t vs Gaussian tail ratios: see F section "
+          "(EAL ~1.00, ES99/P99.9 > 1 expected at deep quantiles)")
 
 
 if __name__ == "__main__":

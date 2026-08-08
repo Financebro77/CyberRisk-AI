@@ -32,7 +32,7 @@ from pathlib import Path
 
 from cyberrisk.knowledge.config import IngestConfig, load_ingest_config
 from cyberrisk.knowledge.document import IngestDocument
-from cyberrisk.knowledge.embedders import HashEmbedder, EmbedderRegistry
+from cyberrisk.knowledge.embedders import EmbedderRegistry
 from cyberrisk.knowledge.pipeline import DEFAULT_MANIFEST, load_corpus_manifest
 from cyberrisk.knowledge.vector_store import VectorStore
 

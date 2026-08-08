@@ -9,7 +9,6 @@ the consultant recommendation would be incoherent.
 
 from __future__ import annotations
 
-import numpy as np
 
 from cyberrisk.metrics import compute_metrics
 from cyberrisk.policy_transform import PolicyStructure, transform_events_to_years

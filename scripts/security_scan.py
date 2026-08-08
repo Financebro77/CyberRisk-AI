@@ -209,7 +209,7 @@ def main() -> int:
             "# Security Release Check",
             "",
             f"Generated: {ts}  ",
-            f"Scanner: `scripts/security_scan.py`  ",
+            "Scanner: `scripts/security_scan.py`  ",
             "",
             "## Result",
             "",

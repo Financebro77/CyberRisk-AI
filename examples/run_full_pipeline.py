@@ -77,17 +77,17 @@ def main() -> None:
         },
     )
     scored = compute_score(profile)
-    print(f"\n=== 1. SCORING (Phase 2) ===")
+    print("\n=== 1. SCORING (Phase 2) ===")
     print(f"Firm          : {scored.firm_name}")
     print(f"Risk score    : {scored.composite_score:.1f}/100")
     print(f"Risk category : {scored.risk_category}")
     print(f"Risk drivers  : {scored.risk_drivers}")
-    print(f"Domain scores :")
+    print("Domain scores :")
     for k, v in sorted(scored.domain_scores.items(), key=lambda kv: -kv[1]):
         print(f"    {k:<22} {v:6.1f}")
 
     # --- 2. Score-driven loss simulation ------------------------------------
-    print(f"\n=== 2. LOSS SIMULATION (score-driven, Phase 1+2) ===")
+    print("\n=== 2. LOSS SIMULATION (score-driven, Phase 1+2) ===")
     result = simulate(cfg, n_years=100_000, score=scored.composite_score, return_events=True)
     m = compute_metrics(result)
     print(f"EAL            : {fmt_usd(m.eal)}")
@@ -96,7 +96,7 @@ def main() -> None:
     print(f"P(no loss)     : {m.prob_zero_loss*100:.1f}%")
 
     # --- 3. Policy transform ------------------------------------------------
-    print(f"\n=== 3. POLICY TRANSFORM (Phase 4) ===")
+    print("\n=== 3. POLICY TRANSFORM (Phase 4) ===")
     policy = PolicyStructure(
         per_occurrence_deductible=250_000.0,
         per_occurrence_limit=5_000_000.0,
@@ -119,13 +119,13 @@ def main() -> None:
     print(f"P(within agg limit): {within*100:.1f}%")
 
     # --- 4. Excel report ----------------------------------------------------
-    print(f"\n=== 4. REPORTING (Phase 4) ===")
+    print("\n=== 4. REPORTING (Phase 4) ===")
     out = OUT_DIR / "Acme_Manufacturing_report.xlsx"
     path = write_report(result, policy_metrics=pm, out_path=out)
     print(f"Workbook written: {path}")
 
     # --- 5. Consultant recommendation ---------------------------------------
-    print(f"\n=== 5. CONSULTANT RECOMMENDATION (Phase E, rule-based) ===")
+    print("\n=== 5. CONSULTANT RECOMMENDATION (Phase E, rule-based) ===")
     from agent.consultant_agent import generate_recommendations
 
     rec = generate_recommendations(scored, m)

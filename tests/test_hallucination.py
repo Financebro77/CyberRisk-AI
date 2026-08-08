@@ -198,7 +198,7 @@ def test_assumptions_cited_in_verdicts():
 # ===========================================================================
 # Section 5: post-generation hallucination check + LLM safety prompt
 # ===========================================================================
-from agent.safety import OutputCheck, check_llm_output
+from agent.safety import check_llm_output
 
 VALIDATED = {
     "EAL": 7_282_945.25,

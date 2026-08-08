@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from cyberrisk.calibration import FrequencySpec, ModelConfig, Scenario, SeveritySpec
-from cyberrisk.simulation import simulate, score_scaled_lambdas
+from cyberrisk.simulation import simulate
 
 
 def _config(**overrides) -> ModelConfig:

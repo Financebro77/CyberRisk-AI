@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from scipy import stats
 
 from cyberrisk.calibration import SeveritySpec
 from cyberrisk.severity import severity_distributions

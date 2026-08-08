@@ -126,7 +126,7 @@ def main() -> None:
     wi = simulate(whatif, n_years=100_000, dependence="dependent")
     m_base = compute_metrics(dep)
     m_wi = compute_metrics(wi)
-    print(f"\n=== What-if: breach frequency doubled ===")
+    print("\n=== What-if: breach frequency doubled ===")
     print(f"  EAL: {fmt_usd(m_base.eal)} -> {fmt_usd(m_wi.eal)} "
           f"(+{(m_wi.eal/m_base.eal - 1)*100:.1f}%)")
     print(f"  VaR 99%: {fmt_usd(m_base.var_99)} -> {fmt_usd(m_wi.var_99)}")

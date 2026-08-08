@@ -25,7 +25,6 @@ either the components or the full sentence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
 
 # The risk measure triple every VaR / ES explanation must state.
 HORIZON = "1-year"  # the simulation aggregates 100,000 independent annual loss scenarios

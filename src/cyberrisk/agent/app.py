@@ -16,7 +16,6 @@ engine via the agent's tools -- the LLM never supplies numbers itself.
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import streamlit as st
 
@@ -87,9 +86,9 @@ with st.sidebar:
         )
     else:
         st.error(
-            f"No LLM key is configured. Create a `.env` file in the project root "
-            f"(see `.env.example`) with `LLM_PROVIDER=openai` + `OPENAI_API_KEY=sk-...` "
-            f"or `LLM_PROVIDER=deepseek` + `DEEPSEEK_API_KEY=sk-...`, then restart."
+            "No LLM key is configured. Create a `.env` file in the project root "
+            "(see `.env.example`) with `LLM_PROVIDER=openai` + `OPENAI_API_KEY=sk-...` "
+            "or `LLM_PROVIDER=deepseek` + `DEEPSEEK_API_KEY=sk-...`, then restart."
         )
         st.code("LLM_PROVIDER=deepseek\nDEEPSEEK_API_KEY=sk-...", language="bash")
 

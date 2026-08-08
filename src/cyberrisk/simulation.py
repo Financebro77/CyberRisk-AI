@@ -43,7 +43,6 @@ from cyberrisk.calibration import ModelConfig
 from cyberrisk.copulas import (
     build_loadings,
     copula_uniforms,
-    dependent_uniforms,
     independent_uniforms,
 )
 from cyberrisk.frequency import count_distributions, rvs_counts

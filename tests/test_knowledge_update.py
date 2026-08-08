@@ -8,7 +8,6 @@ real knowledge/ tree is not mutated.
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 import pytest

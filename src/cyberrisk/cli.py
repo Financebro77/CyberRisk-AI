@@ -18,7 +18,6 @@ in the existing engine / knowledge / agent modules and are reached through
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path

@@ -1,6 +1,5 @@
 """Consultation session (follow-up dialogue) tests."""
 
-import pytest
 
 from agent.elicitation import ConsultationSession, MAX_DIALOGUE_TURNS, DIMENSIONS
 

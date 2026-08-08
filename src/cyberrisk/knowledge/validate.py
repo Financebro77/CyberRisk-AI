@@ -459,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{r.area:<24} {r.status:<6} {r.metric}")
     n_pass = sum(1 for r in results if r.status == "PASS")
     print(f"\n{n_pass}/{len(results)} areas passed")
-    print(f"report: reports/knowledge_validation.md")
+    print("report: reports/knowledge_validation.md")
     return 0 if n_pass == len(results) else 1
 
 

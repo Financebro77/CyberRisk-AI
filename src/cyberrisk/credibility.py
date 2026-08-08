@@ -39,7 +39,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from cyberrisk.calibration import ModelConfig
 

@@ -1,7 +1,6 @@
 """Frequency distribution tests."""
 
 import numpy as np
-from scipy import stats
 
 from cyberrisk.calibration import FrequencySpec
 from cyberrisk.frequency import count_distributions, rvs_counts

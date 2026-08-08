@@ -140,8 +140,8 @@ def main() -> None:
         return_events=True,
     )
     m = compute_metrics(result)
-    print(f"   Simulation: 100,000 simulated years, score-driven frequencies,")
-    print(f"   Student-t dependence, catastrophe years enabled.")
+    print("   Simulation: 100,000 simulated years, score-driven frequencies,")
+    print("   Student-t dependence, catastrophe years enabled.")
     print(f"\n   Expected Annual Loss (EAL)    : {fmt_usd(m.eal)}")
     print(f"   1-in-100 year loss (P99.0)    : {fmt_usd(m.p99_0)}")
     print(f"   1-in-200 year loss (P99.5)    : {fmt_usd(m.p99_5)}")
@@ -159,13 +159,13 @@ def main() -> None:
     # 1-year horizon, and the loss definition (ground-up, before insurance).
     print(f"   VaR 99% (1-year, ground-up before insurance) {fmt_usd(m.var_99)}:")
     print(f"     '99% annual aggregate VaR is {fmt_usd(m.var_99)}. Only 1% of")
-    print(f"     simulated years exceed this amount.'")
+    print("     simulated years exceed this amount.'")
     print(f"   ES 99% (1-year, ground-up before insurance)  {fmt_usd(m.es_99)}:")
     print(f"     'The 99% Expected Shortfall is {fmt_usd(m.es_99)}, the average annual")
-    print(f"     loss in the worst 1% of simulated outcomes.'")
+    print("     loss in the worst 1% of simulated outcomes.'")
     print(f"   ES99 / EAL = {m.es_99/m.eal:.1f}x: the tail is {m.es_99/m.eal:.1f} times the")
-    print(f"   average year.  This is the 'catastrophe multiplier' -- a single 1-in-100")
-    print(f"   event can be worth over a decade of average losses.")
+    print("   average year.  This is the 'catastrophe multiplier' -- a single 1-in-100")
+    print("   event can be worth over a decade of average losses.")
 
     # ------------------------------------------------------------------ 6. insurance response & client retained loss
     sec("6. INSURANCE RESPONSE & CLIENT RETAINED LOSS")
@@ -184,13 +184,13 @@ def main() -> None:
         policy=current,
     )
     retained, transferred = out["retained"], out["transferred"]
-    print(f"   Current program: $25M limit / $1M retention / $25M aggregate")
-    print(f"   SECTION 1 -- GROUND-UP CYBER LOSS (before insurance):")
+    print("   Current program: $25M limit / $1M retention / $25M aggregate")
+    print("   SECTION 1 -- GROUND-UP CYBER LOSS (before insurance):")
     print(f"     EAL  : {fmt_usd(m.eal)}")
     print(f"     VaR99: {fmt_usd(m.var_99)}")
     print(f"     ES99 : {fmt_usd(m.es_99)}")
     print(f"     P99.9: {fmt_usd(m.p99_9)}")
-    print(f"   SECTION 2 -- INSURANCE RESPONSE:")
+    print("   SECTION 2 -- INSURANCE RESPONSE:")
     print(f"     Policy limit   : {fmt_usd(current.annual_aggregate_limit)}")
     print(f"     Retention      : {fmt_usd(current.per_occurrence_deductible)}")
     print(f"     Covered loss   : {fmt_usd(float(transferred.mean()))} (transferred EAL)")
@@ -198,7 +198,7 @@ def main() -> None:
     # years where transferred hits the limit (exhaustion)
     exhausted = np.mean(transferred >= current.annual_aggregate_limit - 1e-6)
     print(f"     P(annual limit exhausted) : {exhausted*100:.2f}%")
-    print(f"   SECTION 3 -- CLIENT RETAINED LOSS:")
+    print("   SECTION 3 -- CLIENT RETAINED LOSS:")
     print(f"     Retained EAL  : {fmt_usd(float(retained.mean()))}")
     retained_es99 = float(retained[retained >= np.quantile(retained, 0.99)].mean())
     print(f"     Retained ES99 : {fmt_usd(retained_es99)}")
@@ -231,13 +231,13 @@ def main() -> None:
     limit = current.annual_aggregate_limit
     insurer_payment = min(max(0.0, gross_999 - retention), limit)
     residual = max(0.0, gross_999 - retention - insurer_payment)
-    print(f"   ATLAS GLOBAL LOGISTICS GROUP -- CYBER RISK ASSESSMENT")
+    print("   ATLAS GLOBAL LOGISTICS GROUP -- CYBER RISK ASSESSMENT")
     print(f"   Risk score {scored.composite_score:.0f}/100 ({scored.risk_category})")
     print(f"   Expected annual loss: {fmt_usd(m.eal)}; 1-in-100 year: {fmt_usd(m.es_99)}")
     print(f"   Ground-up 1-in-1000 year loss: {fmt_usd(gross_999)} (before insurance)")
-    print(f"   At the current $25M limit / $1M retention, a 1-in-1000 event leaves a")
+    print("   At the current $25M limit / $1M retention, a 1-in-1000 event leaves a")
     print(f"   residual uncovered exposure of {fmt_usd(residual)} after insurance.")
-    print(f"   Recommend a higher limit and OT hardening.")
+    print("   Recommend a higher limit and OT hardening.")
 
     # Mandatory model-limitations disclosure at the end of the advisory report.
     from cyberrisk.agent.disclosure import disclosure_block
