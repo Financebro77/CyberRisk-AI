@@ -20,8 +20,8 @@ domains:
     engine_link: "scoring (framework -> factor mapping)"
 
   - key: insurance
-    description: "Coverage, market terms, pricing, and claims guidance"
-    subfolders: [wordings, market-terms, pricing, claims-guides]
+    description: "Coverage, market terms, pricing, claims guidance, and claims/ransomware trends"
+    subfolders: [wordings, market-terms, pricing, claims-guides, cyber-claims, ransomware-trends]
     engine_link: "policy_transform guidance; future pricing model"
 
   - key: threat-intel
@@ -29,19 +29,24 @@ domains:
     subfolders: [campaigns, actors, sector-landscapes, vulnerabilities]
     engine_link: "frequency calibration; real attack-surface input (mirror to datasets)"
 
+  - key: vulnerability-data
+    description: "Structured vulnerability databases (CISA KEV, NVD) for exposure prioritisation"
+    subfolders: [cisa-kev]
+    engine_link: "risk-scoring support; threat-exposure analysis (mirror to datasets)"
+
   - key: regulatory
     description: "Regulations and supervisory guidance, per obligation, with thresholds/penalties"
     subfolders: [dora, nis2, gdpr, hipaa, sec, state-privacy, ai-act, solvency-ii]
     engine_link: "scoring factors; breach severity components"
 
   - key: industry-reports
-    description: "Public benchmark & market reports (IBM, DBIR, NetDiligence, Hiscox, Coalition, own practice reports)"
-    subfolders: [ibm-codb, verizon-dbir, netdiligence, hiscox, coalition, marsh-reports]
+    description: "Public benchmark & market reports (IBM, DBIR, NetDiligence, Hiscox, Coalition, ENISA, Microsoft, own practice reports)"
+    subfolders: [ibm-codb, verizon-dbir, netdiligence, hiscox, coalition, enisa, microsoft-security-reports, marsh-reports]
     engine_link: "calibration citations; key numbers mirrored to datasets/"
 
   - key: incidents
     description: "Historical cyber incidents (curated narratives + imported event tables)"
-    subfolders: [curated, imported]
+    subfolders: [curated, imported, ransomware, data-breach, supply-chain]
     engine_link: "severity calibration; credibility"
 
   # ---- structured quantitative (datasets/) --------------------------

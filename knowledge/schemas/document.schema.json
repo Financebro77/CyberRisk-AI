@@ -13,8 +13,8 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^corpus/[a-z0-9-]+/[a-z0-9-]+/[a-zA-Z0-9-_]+$",
-      "description": "Unique, namespaced by location: corpus/<domain>/<category>/<doc>"
+      "pattern": "^corpus/[a-z0-9-]+(/[a-zA-Z0-9-_]+)*$",
+      "description": "Unique, namespaced by location: corpus/<domain>/<category>/<doc> (any depth)"
     },
     "domain": { "type": "string", "description": "Must match a value in manifests/domains.yaml" },
     "category": { "type": "string" },
@@ -32,6 +32,10 @@
       "description": "sha256 of the source file; derived/state uses it to skip unchanged documents"
     },
     "acquired_at": { "type": "string", "format": "date" },
+    "publication_date": { "type": "string", "format": "date", "description": "When the source was published (optional; falls back to acquired_at in the vector store metadata)" },
+    "industry": { "type": "string", "description": "Industry key from industry_taxonomy.yaml, e.g. 'healthcare', 'finance' (optional; a generic doc has none)" },
+    "taxonomy": { "type": "array", "items": { "type": "string" }, "description": "Uniform subcategory keys this document covers, e.g. ['regulatory', 'insurance-claims'] (optional)" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "Source confidence 0-1 (optional)" },
     "refresh_cadence": {
       "type": "string",
       "enum": ["daily", "weekly", "monthly", "quarterly", "annual", "on_revision"]

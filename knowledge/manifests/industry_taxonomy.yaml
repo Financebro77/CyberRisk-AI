@@ -1,0 +1,195 @@
+# =====================================================================
+# INDUSTRY TAXONOMY — the registered industry vocabulary + subcategories
+# =====================================================================
+# Every document that carries an `industry` must reference a key here.  The
+# six subcategories are UNIFORM across industries, so a document under
+# 'healthcare/regulatory' is unambiguously a healthcare regulatory
+# requirement.
+#
+# ORTHOGONAL to content-type domains (domains.yaml): a document keeps its
+# content-type domain (regulatory, threat-intel, ...) AND gains an industry
+# label + taxonomy subcategories.  A generic standard has no industry.
+#
+# EXTENSIBLE: add an industry = add one block below.  Add a subcategory =
+# add one block under an industry's `subcategories`.  No code change.
+# =====================================================================
+
+taxonomy_schema_version: "1.0"
+
+industries:
+
+  # ------------------------------------------------------------------ Healthcare
+  - key: healthcare
+    name: Healthcare
+    description: "Hospitals, health systems, clinics, pharma, medical devices, health insurers"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "Threats specific to healthcare: targeted ransomware, PHI theft, medical-device exploitation, insider threats"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "HIPAA, OCR penalties, state privacy laws, HITECH, FDA device security"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "Ransomware on EHR, phishing for PHI, credential theft, third-party billing vendors, connected devices"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Breach response, extortion, notification, business interruption, regulatory defense"
+      - key: controls
+        name: Recommended Security Controls
+        description: "MFA, data encryption (at rest/in transit), access control, backups, incident response, medical-device segmentation"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Highest per-record cost, notification + credit monitoring, OCR fines, prolonged BI from EHR downtime"
+
+  # ------------------------------------------------------------------ Finance
+  - key: finance
+    name: Finance
+    description: "Banks, insurers, asset managers, payment firms, fintech, capital markets"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "Highly-targeted sector: advanced persistent threats, ransomware-as-a-service, BEC, nation-state espionage"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "DORA, GLBA, PCI DSS, SEC cyber-disclosure, PSD2, GDPR, FCA/PRA, NYDFS"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "BEC/wire fraud, ransomware, credential stuffing, third-party/fintech supply chain, ATM/POS skimming, API abuse"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Wire-transfer fraud, extortion, business interruption, regulatory defense, social-engineering fraud"
+      - key: controls
+        name: Recommended Security Controls
+        description: "MFA + FIDO, transaction monitoring, privileged access management, network segmentation, vendor risk, fraud detection"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Large absolute losses from BEC, high regulatory fines, system-critical BI, strict notification duties"
+
+  # ------------------------------------------------------------------ Retail
+  - key: retail
+    name: Retail
+    description: "Brick-and-mortar and e-commerce retailers, grocers, consumer brands"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "Card-data targeting, Magecart/skimming, credential stuffing, loyalty-account fraud, seasonal ransomware"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "PCI DSS, GDPR/CCPA, breach-notification laws, fair-trading rules"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "POS malware, web skimming, phishing, third-party e-commerce platform compromise, supply-chain SaaS"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Card-breach response, PCI fines/assessments, extortion, business interruption, customer-notification"
+      - key: controls
+        name: Recommended Security Controls
+        description: "Card data minimization, tokenization, PCI compliance, web-application firewall, endpoint protection, fraud monitoring"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Per-card costs, PCI fines, seasonal-peak BI, brand/reputational impact, notification + credit monitoring"
+
+  # ------------------------------------------------------------------ Manufacturing
+  - key: manufacturing
+    name: Manufacturing
+    description: "Industrial goods, automotive, electronics, CPG, food & beverage, machinery"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "OT/ICS targeting, industrial espionage, ransomware on production, supply-chain compromise"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "NIS2, sector-specific safety rules, export controls, customer-contractual security"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "OT/ICS compromise, phishing, vulnerable connected devices, vendor/MSP supply chain, legacy control systems"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Business interruption (production halt), extortion, property-damage from OT events, recall/consequential loss"
+      - key: controls
+        name: Recommended Security Controls
+        description: "OT/IT segmentation, patch management, access control on ICS, backups + recovery, vendor management, physical security"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Production-halt BI dominates, OT damage, supply-chain ripple, long recovery from legacy systems"
+
+  # ------------------------------------------------------------------ Energy
+  - key: energy
+    name: Energy
+    description: "Oil & gas, utilities, renewables, power generation, grid operators"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "Critical-infrastructure targeting, nation-state OT attacks, ransomware on SCADA, physical-digital convergence"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "NERC CIP (US grid), NIS2/energy directives, critical-infrastructure protection, safety regulators"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "SCADA/ICS compromise, phishing, remote-access exploitation, third-party vendors, IoT sensors, insider"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "BI from grid/production disruption, extortion, property damage, contingent BI, service interruption"
+      - key: controls
+        name: Recommended Security Controls
+        description: "ICS segmentation, remote-access controls, OT monitoring, redundancy/recovery, supply-chain security, grid resilience"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Critical-infrastructure BI, wide-area outage liability, safety/environmental exposure, long recovery windows"
+
+  # ------------------------------------------------------------------ Government
+  - key: government
+    name: Government
+    description: "Federal/state/local agencies, defense, public services, emergency services"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "Nation-state espionage, ransomware on public services, supply-chain attacks on contractors, disinformation"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "FedRAMP, NIST 800-53, executive orders (cyber), state data-protection rules, classified-data handling"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "Phishing, VPN/edge exploitation, third-party contractors, vulnerable legacy systems, credential theft"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Ransomware response, BI of public services, extortion, (limited) cyber cover for agencies"
+      - key: controls
+        name: Recommended Security Controls
+        description: "Zero trust, MFA, network segmentation, endpoint detection, secure supply chain, incident response, clearance-based access"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Public-service interruption, data-exposure of citizen records, espionage loss (IP/classified), reputational/political impact"
+
+  # ------------------------------------------------------------------ Technology
+  - key: technology
+    name: Technology
+    description: "Software, SaaS, cloud providers, IT services, semiconductor, data centers"
+    subcategories:
+      - key: threat-landscape
+        name: Threat Landscape
+        description: "High-value target (IP, source code), supply-chain attacks (build pipelines), cloud-abuse, vulnerability exploitation"
+      - key: regulatory
+        name: Regulatory Requirements
+        description: "GDPR/CCPA, EU AI Act, software supply-chain rules, customer-contractual security, disclosure duties"
+      - key: attack-vectors
+        name: Common Attack Vectors
+        description: "Software supply-chain/CI-CD compromise, code-repo attacks, cloud-misconfig, API abuse, zero-day exploitation"
+      - key: insurance-claims
+        name: Typical Insurance Claims
+        description: "Dependent BI (customers down), extortion, breach response, liability from software flaws, cloud-outage claims"
+      - key: controls
+        name: Recommended Security Controls
+        description: "Secure SDLC, SBOM, CI/CD security, cloud security posture, secrets management, pen-testing, incident response"
+      - key: loss-characteristics
+        name: Loss Characteristics
+        description: "Dependent-BI ripple, IP/source-code loss, third-party liability, cloud-outage concentration, reputation to customers"
+
+# ---------------------------------------------------------------------
+# Registration rules
+# ---------------------------------------------------------------------
+# - industry keys are lowercase slugs; documents reference them in `industry`.
+# - the six subcategory keys are UNIFORM across all industries — do not add a
+#   custom subcategory to one industry unless every industry gets it.
+# - subcategory keys are used in a document's `taxonomy` list.

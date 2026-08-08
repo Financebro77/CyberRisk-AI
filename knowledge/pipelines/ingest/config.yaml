@@ -1,0 +1,44 @@
+# =====================================================================
+# INGEST PIPELINE CONFIG — reusable, configurable, not hard-coded
+# =====================================================================
+# Tuning the pipeline is a config change, never a code change.  Every key
+# here is optional; missing keys fall back to the pydantic defaults in
+# src/cyberrisk/knowledge/config.py.
+#
+# Chunk sizing defaults (overridden per document by corpus_manifest.yaml's
+# `chunking` block when present).
+# =====================================================================
+
+default_max_chars: 1200
+default_overlap: 150
+min_chunk_chars: 20
+paragraph_min_chars: 40
+
+# Disable a format by setting its flag False (e.g. disable PDF extraction
+# until the 'knowledge' extra is installed).
+enabled_formats:
+  pdf: true
+  markdown: true
+  md: true
+  docx: true
+  html: true
+  htm: true
+  txt: true
+
+# Derived output root.  Defaults to <repo>/knowledge/derived (gitignored).
+# derived_root: null
+
+# Strategy registry: the section-based strategies map to the 'section'
+# chunker; 'plain' is the fallback for headingless documents.
+# strategy_registry:
+#   by_chapter: section
+#   by_clause: section
+#   by_control: section
+#   by_obligation: section
+#   by_campaign: section
+#   by_incident: section
+#   by_table: section
+#   plain: plain
+
+# Force a full re-ingest even when content_hash is unchanged.
+# force_reingest: false

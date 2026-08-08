@@ -1,0 +1,20 @@
+Verizon 2026 Data Breach Investigations Report — Highlights
+
+Ransomware remains the leading cause of breaches, featuring in roughly a
+quarter of all incidents. Extortion continues to rise as attackers pivot from
+encryption to data theft and the threat of public release.
+
+Human error remains a material cause. Misconfiguration and misdelivery are
+persistent contributors, and the phishing vector continues to grow.
+
+Supply chain compromise features in a meaningful share of breaches, with
+third-party software and managed service providers serving as initial access
+points.
+
+Business email compromise remains a high-frequency, lower-severity threat,
+with wire-transfer fraud the most common outcome.
+
+For a large firm, the likelihood of disclosing at least one breach within a
+twelve-month period is substantial. The report underscores that control
+maturity — patching cadence, multi-factor authentication coverage, and
+incident response readiness — materially reduces both frequency and impact.

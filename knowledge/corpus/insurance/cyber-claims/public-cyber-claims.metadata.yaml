@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: public_cyber_claims
+title: Public Cyber Insurance Claims Reports
+publisher: Various (market/carrier publications)
+publication_date: irregular
+category: cyber_insurance
+industry: all
+confidence_level: medium
+usage: RAG_only
+calibration_allowed: false
+notes: Ransomware trends, claims causes, severity drivers, coverage discussion. Proprietary where licensing applies — summarised only.

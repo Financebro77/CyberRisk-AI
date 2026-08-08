@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: microsoft_security_intelligence
+title: Microsoft Security Intelligence Report
+publisher: Microsoft
+publication_date: periodic
+category: industry-report
+industry: all
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: Threat trends and attacker behaviour. Open license.

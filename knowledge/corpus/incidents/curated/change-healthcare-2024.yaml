@@ -1,0 +1,38 @@
+# =====================================================================
+# HISTORICAL INCIDENT — structured ingestion format
+# =====================================================================
+# Every incident is a YAML file with these fields.  Add a new incident by
+# dropping a file here; the IncidentIndex discovers it, the standard ingest
+# pipeline embeds its narrative for RAG, and search_incidents queries it.
+#
+#   id                  unique slug (used for the citation marker)
+#   company             the affected organization
+#   industry            taxonomy key from industry_taxonomy.yaml
+#   attack_type         the incident type (ransomware, BEC, breach, ...)
+#   attack_vector       how the attack entered
+#   root_cause          the underlying control/process failure
+#   financial_loss      USD (approximate / publicly reported), or null
+#   operational_impact  effect on operations
+#   regulatory_consequences  regulator / legal fallout
+#   insurance_implications   how cyber cover responded / would respond
+#   lessons_learned     recommended controls / takeaways
+#   incident_date       YYYY-MM-DD
+# =====================================================================
+
+id: change-healthcare-2024
+company: Change Healthcare
+industry: healthcare
+attack_type: ransomware
+attack_vector: "Third-party / compromised credentials (no MFA on a remote-access account)"
+root_cause: "Credential compromise on a legacy Citrix remote-access portal without multi-factor authentication, enabling lateral movement into a critical claims-processing environment"
+financial_loss: 872000000
+operational_impact: "Nationwide claims-processing outage for several weeks; pharmacies and hospitals diverted to manual/paper workflows; cash-flow strain on providers awaiting reimbursement"
+regulatory_consequences: "HHS OCR opened an investigation into the breach and its notification handling; multiple class-action lawsuits filed; state attorneys general opened probes; congressional scrutiny of the health-sector payment infrastructure"
+insurance_implications: "Cyber policy responded for extortion payment and incident response; business-interruption and contingent-BI coverage tested by the prolonged outage; the event drove the market to scrutinize dependent-BI and critical-third-party exposure in healthcare"
+lessons_learned:
+  - "Enforce MFA on all remote-access, admin, and third-party accounts — the single most important control here"
+  - "Segment and isolate third-party/critical systems from core production so a compromise cannot reach claims processing"
+  - "Maintain immutable, tested backups and a documented incident-response plan with clear authority to disconnect critical systems"
+  - "Stress-test dependent-BI and critical-third-party exposure in the insurance program"
+incident_date: "2024-02-21"
+source_label: "HHS OCR + press + court filings (curated)"

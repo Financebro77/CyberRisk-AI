@@ -1,0 +1,11 @@
+# Document quality metadata
+document_id: enisa_threat_landscape
+title: ENISA Threat Landscape Report
+publisher: ENISA
+publication_date: annual
+category: industry-report
+industry: all (EU focus)
+confidence_level: high
+usage: RAG_only
+calibration_allowed: false
+notes: European cyber threat trends. Open license.
