@@ -1,0 +1,27 @@
+# =====================================================================
+# CyberRisk AI — container deployment
+#
+#   docker compose up --build
+#   → http://localhost:8000   (UI + API)
+#   → http://localhost:8000/docs  (API docs)
+#
+# Secrets are injected from .env (gitignored) — never baked into the image.
+# =====================================================================
+
+services:
+  cyberrisk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyberrisk:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                      # LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
+    volumes:
+      # Knowledge corpus + manifests (read-only) so ingested content persists.
+      - ./knowledge/corpus:/app/knowledge/corpus:ro
+      - ./knowledge/manifests:/app/knowledge/manifests:ro
+      # Generated reports (write).
+      - ./data/output:/app/data/output
+    restart: unless-stopped

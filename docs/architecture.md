@@ -40,7 +40,7 @@ The stack in one table:
 
 | Layer | Technology | Path |
 |---|---|---|
-| Interfaces | CLI, Streamlit, React + Vite, FastAPI, Python API | `src/cyberrisk/cli.py`, `src/cyberrisk/agent/app.py`, `src/cyberrisk/api/`, `web/frontend/` |
+| Interfaces | CLI, Streamlit, React + Vite, FastAPI, Python API | `src/cyberrisk/cli.py`, `src/cyberrisk/agent/app.py`, `src/cyberrisk/api/`, `app/frontend/` |
 | AI consultant | Tool-calling agent, bounded loop, hallucination backstop | `src/cyberrisk/agent/` |
 | LLM abstraction | `LLMClient` interface + OpenAI/DeepSeek providers + factory | `src/cyberrisk/llm/` |
 | Knowledge / RAG | Ingest → chunk → embed → SQLite vector store → retrieve | `src/cyberrisk/knowledge/` |

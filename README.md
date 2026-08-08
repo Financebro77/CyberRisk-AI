@@ -268,7 +268,7 @@ pip install -e ".[web]"
 python -m uvicorn cyberrisk.api.main:app --port 8000
 ```
 
-Open <http://localhost:8000> — the UI is served from `web/frontend/dist`, and interactive API docs live at <http://localhost:8000/docs>.
+Open <http://localhost:8000> — the UI is served from `app/frontend/dist`, and interactive API docs live at <http://localhost:8000/docs>.
 
 ### Development mode (live-reloading)
 
@@ -277,12 +277,12 @@ Open <http://localhost:8000> — the UI is served from `web/frontend/dist`, and 
 python -m uvicorn cyberrisk.api.main:app --port 8000 --reload
 
 # Terminal 2 — Vite dev server on :5173 (proxies /api → :8000)
-cd web/frontend
+cd app/frontend
 npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>. The Vite dev server proxies `/api` calls to the backend (`web/frontend/vite.config.ts`), so both must be running.
+Open <http://localhost:5173>. The Vite dev server proxies `/api` calls to the backend (`app/frontend/vite.config.ts`), so both must be running.
 
 ### Python API usage
 
@@ -627,26 +627,31 @@ See [`SECURITY.md`](SECURITY.md) for vulnerability reporting.
 ## Project Layout
 
 ```
-src/cyberrisk/
-├── scoring.py          # 18-factor risk scoring
-├── frequency.py        # scenario frequency calibration
-├── severity.py         # severity distributions
-├── simulation.py       # Monte Carlo loss simulation
-├── metrics.py          # EAL, VaR, Expected Shortfall, PML
-├── copulas.py          # dependency modelling between scenarios
-├── policy_transform.py # insurance structure: retained vs transferred
-├── knowledge/          # ingestion, chunking, embedding, vector store, RAG
-├── agent/              # AI consultant: LLM client (via llm/), tools, controller, UI
-├── llm/                # LLM provider abstraction: base interface, OpenAI/DeepSeek providers, factory
-└── api/                # FastAPI web layer
+src/
+├── cyberrisk/          # Installed Python package (engine, agent, llm, knowledge, api, cli)
+│   ├── scoring.py      #   18-factor risk scoring
+│   ├── simulation.py   #   Monte Carlo loss simulation
+│   ├── metrics.py      #   EAL, VaR, Expected Shortfall, PML
+│   ├── knowledge/      #   ingestion, chunking, embedding, vector store, RAG
+│   ├── agent/          #   AI consultant: LLM client (via llm/), tools, controller, UI
+│   ├── llm/            #   LLM provider abstraction: OpenAI/DeepSeek providers, factory
+│   └── api/            #   FastAPI web layer
+├── agent/              # Rule-based consultant agent (re-exports agent.safety, elicitation, ...)
+├── engine/             # Logical engine namespace (re-exports cyberrisk engine modules)
+└── rag/                # Logical RAG namespace (re-exports cyberrisk.knowledge)
 
-web/
-└── frontend/           # React + Vite SPA (dist/ is served by FastAPI)
+app/
+├── frontend/           # React + Vite SPA (dist/ is served by FastAPI)
+└── backend/            # FastAPI re-export (uvicorn app.backend:app)
 
+docs/                   # architecture, model methodology, deployment, API, knowledge base
 examples/               # runnable worked examples (full pipeline, benchmarks, demos)
 config/                 # scoring weights, scenarios, simulation, benchmark profiles
 knowledge/              # corpus, datasets, manifests, derived artifacts
 tests/                  # 600 tests, including tests/validate/ model-validation suite
+scripts/                # security scanner
+Dockerfile              # multi-stage image (backend + frontend + runtime)
+docker-compose.yml      # containerised deployment
 ```
 
 ---

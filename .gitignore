@@ -74,13 +74,16 @@ venv.bak/
 pip-delete-this-directory.txt
 
 # ----------------------------------------------------------------------
-# Node / frontend (web/frontend) — already covered by web/frontend/.gitignore,
+# Node / frontend (app/frontend) — already covered by app/frontend/.gitignore,
 # kept here as a belt-and-suspenders guard at the repo root.
 # ----------------------------------------------------------------------
 node_modules/
-web/frontend/node_modules/
-web/frontend/dist/
+app/frontend/node_modules/
+app/frontend/dist/
 *.tsbuildinfo
+# Legacy web/ dir (old frontend home) — only ignored build artifacts remain;
+# regenerable, safe to delete once no node process holds file locks.
+/web/
 .vite/
 .eslintcache
 *.local

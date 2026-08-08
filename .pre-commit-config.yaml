@@ -32,8 +32,8 @@ repos:
         args: [--maxkb=512]
         exclude: |
           (?x)^(
-            web/frontend/package-lock\.json |
-            web/frontend/pnpm-lock\.yaml
+            app/frontend/package-lock\.json |
+            app/frontend/pnpm-lock\.yaml
           )$
 
       # Catch accidental credential-like patterns (kept conservative).

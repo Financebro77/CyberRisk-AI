@@ -5,10 +5,10 @@ Run (dev):
     .venv/Scripts/python -m uvicorn cyberrisk.api.main:app --port 8000
 
 The API wraps the existing tool layer read-only -- no engine or agent
-module is modified.  In production the built frontend (web/frontend/dist)
+module is modified.  In production the built frontend (app/frontend/dist)
 is served as static files with an SPA fallback so a single process serves
 both the API and the UI on :8000.  During development the Vite dev server
-(web/frontend, port 5173) proxies /api -> :8000.
+(app/frontend, port 5173) proxies /api -> :8000.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from cyberrisk.api.routes import router
 
 # Repo root: src/cyberrisk/api/main.py -> src/cyberrisk -> src -> repo root.
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-FRONTEND_DIST = REPO_ROOT / "web" / "frontend" / "dist"
+FRONTEND_DIST = REPO_ROOT / "app" / "frontend" / "dist"
 
 # Install the sanitised root logger so uvicorn/app log lines cannot leak a
 # secret or personal data (see cyberrisk.privacy).
@@ -71,7 +71,7 @@ def index() -> FileResponse | dict:
     return {
         "service": "CyberRisk AI",
         "docs": "/docs",
-        "note": "Frontend not built yet. Run the Vite dev server in web/frontend, or npm run build first.",
+        "note": "Frontend not built yet. Run the Vite dev server in app/frontend, or npm run build first.",
     }
 
 

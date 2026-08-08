@@ -20,7 +20,7 @@ This document covers three deployment paths:
 |---|---|
 | **Python** | **3.10 or newer** (3.11/3.12 recommended) |
 | **OS** | Windows 10/11, macOS, or Linux |
-| **Node.js** | Only for frontend development; the pre-built `web/frontend/dist` is served by FastAPI, so this is skippable |
+| **Node.js** | Only for frontend development; the pre-built `app/frontend/dist` is served by FastAPI, so this is skippable |
 | **Internet** | Only for the AI consultant layer (OpenAI / DeepSeek); the engine runs fully offline |
 
 ### 1.2 Install
@@ -99,14 +99,20 @@ python -c "import cyberrisk; print(cyberrisk.__version__)"
 
 ## 2. Docker deployment
 
-The repo does not yet include a `Dockerfile` / `docker-compose.yml`. The
-following is the **recommended configuration** to add — it containerises the
-FastAPI app and serves the pre-built frontend from a single image.
+The repo ships a multi-stage `Dockerfile` and a `docker-compose.yml` that
+containerise the FastAPI app and serve the pre-built frontend from a single
+image.
 
-> This is a **specification**, not a shipped file. Marked clearly so nothing
-> is implied to exist.
+### 2.1 The shipped `Dockerfile`
 
-### 2.1 Multi-stage `Dockerfile` (proposal)
+Three stages:
+
+- **backend** — `python:3.12-slim` with the system deps for knowledge
+  parsing (`poppler-utils`), installs the package with
+  `.[web,reporting,knowledge]`.
+- **frontend** — `node:20-alpine` builds the React SPA (`app/frontend`).
+- **runtime** — the backend image plus the built SPA; runs as an
+  unprivileged user and health-checks `/api/health`.
 
 ```dockerfile
 # ---- backend: build the Python package ----
@@ -114,7 +120,6 @@ FROM python:3.12-slim AS backend
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# System deps for knowledge parsing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential poppler-utils && rm -rf /var/lib/apt/lists/*
 
@@ -124,32 +129,39 @@ RUN pip install --no-cache-dir -e ".[web,reporting,knowledge]"
 
 # ---- frontend: build the React app ----
 FROM node:20-alpine AS frontend
-WORKDIR /web
-COPY web/frontend/package.json web/frontend/package-lock.json ./
+WORKDIR /build
+COPY app/frontend/package.json app/frontend/package-lock.json ./
 RUN npm ci
-COPY web/frontend ./
+COPY app/frontend ./
 RUN npm run build
 
 # ---- runtime: single image serving API + built UI ----
 FROM backend AS runtime
-COPY --from=frontend /web/dist /app/web/frontend/dist
+COPY --from=frontend /build/dist /app/app/frontend/dist
 EXPOSE 8000
 CMD ["python", "-m", "uvicorn", "cyberrisk.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### 2.2 `docker-compose.yml` (proposal)
+### 2.2 The shipped `docker-compose.yml`
 
 ```yaml
 services:
   cyberrisk:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyberrisk:latest
     ports:
       - "8000:8000"
     env_file:
-      - .env                 # LLM_PROVIDER + the matching API key
+      - .env                      # LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
     volumes:
-      - ./knowledge:/app/knowledge        # corpus + manifests (read)
-      - ./data/output:/app/data/output    # generated reports (write)
+      # Knowledge corpus + manifests (read-only) so ingested content persists.
+      - ./knowledge/corpus:/app/knowledge/corpus:ro
+      - ./knowledge/manifests:/app/knowledge/manifests:ro
+      # Generated reports (write).
+      - ./data/output:/app/data/output
+    restart: unless-stopped
 ```
 
 ### 2.3 Run
