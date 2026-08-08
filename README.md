@@ -37,6 +37,16 @@ It is built for:
 
 ---
 
+## Documentation
+
+- **[Architecture](docs/architecture.md)** — AI agent architecture, risk engine, Monte Carlo simulation, RAG pipeline, and the LLM layer.
+- **[Model Methodology](docs/model-methodology.md)** — how the numbers are produced: risk scoring, EAL, VaR, Expected Shortfall, insurance analysis, and the model's explicit assumptions.
+- **[Deployment](docs/deployment.md)** — local installation, Docker deployment, and the cloud deployment roadmap.
+- **[API](docs/api.md)** — the FastAPI surface: endpoints, request/response shapes, and the planned future API.
+- **[Knowledge Base](docs/knowledge-base.md)** — data sources, the RAG process, and how to add new knowledge.
+
+---
+
 ## Architecture
 
 ```
