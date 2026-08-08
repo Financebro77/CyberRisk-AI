@@ -34,6 +34,8 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
     env_file:
       - .env                       # OPENAI_API_KEY / DEEPSEEK_API_KEY + overrides
+                                   # optional API security: CYBERRISK_API_KEY,
+                                   # CYBERRISK_RATE_LIMIT (see docs/api.md §4)
     volumes:
       # Knowledge corpus + manifests (read-only) so ingested content persists.
       - ./knowledge/corpus:/app/knowledge/corpus:ro

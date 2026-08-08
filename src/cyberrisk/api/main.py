@@ -59,6 +59,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Optional API auth + rate limiting (opt-in via env — see api/security.py).
+# Protects every /api/* route with a bearer key when CYBERRISK_API_KEY is set
+# and rate-limits per client when CYBERRISK_RATE_LIMIT > 0.
+from cyberrisk.api.security import APIGatewayMiddleware
+
+app.add_middleware(APIGatewayMiddleware)
+
 app.include_router(router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 

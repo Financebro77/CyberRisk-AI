@@ -217,13 +217,50 @@ without one, session creation returns a 503.
 
 ---
 
-## 4. Future API surface
+## 4. Security
+
+Both are **opt-in via environment variables**, so the default local/dev API is
+unchanged, while a production deployment can enable them without code changes.
+
+### 4.1 API-key authentication
+
+Set `CYBERRISK_API_KEY` and every `/api/*` route requires:
+
+```http
+Authorization: Bearer <your-key>
+```
+
+```bash
+curl -X POST http://localhost:8000/api/score \
+  -H "Authorization: Bearer $CYBERRISK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"industry":"Manufacturing","revenue_usd":500000000}'
+```
+
+- Requests without a valid key get **401**.
+- `GET /api/health` is **exempt** so the Docker healthcheck and load balancers
+  can probe without a key.
+- The key is read from the environment only — never hard-coded, never logged
+  (the sanitised logger and constant-time comparison protect it).
+
+### 4.2 Rate limiting
+
+Set `CYBERRISK_RATE_LIMIT` (requests per minute per client IP) to enable an
+in-memory sliding window:
+
+```ini
+CYBERRISK_RATE_LIMIT=60
+```
+
+- Exceeding the limit returns **429**.
+- In-memory — suitable for a single process. For a multi-worker deployment,
+  move the window to Redis (roadmap).
+
+### 4.3 Future API surface
 
 The API is evolving toward a production integration surface. Planned (in
 priority order):
 
-- **API-key authentication** — `Authorization: Bearer <key>` for machine
-  clients, with per-key rate limits (LLM calls are billed).
 - **Versioning** — a stable `v1` prefix (`/api/v1/...`) once the surface
   freezes; the current routes stay as the unversioned fast path.
 - **OpenAPI SDK** — generated typed clients (Python / TypeScript) from the

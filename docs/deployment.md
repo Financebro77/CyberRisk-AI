@@ -253,11 +253,12 @@ it for production at scale. They are ordered by priority.
 
 ### 3.3 Platform integration
 
-- [ ] **AuthN/AuthZ** — add SSO / API-key auth in front of the API (the
-  engine itself is stateless and safe to expose, but client briefs are
-  confidential).
-- [ ] **CI/CD** — run `pytest` + the security scanner + frontend build in CI;
-  push tagged images to a registry on release.
+- [x] **API-key auth + rate limiting** — shipped (`CYBERRISK_API_KEY`,
+  `CYBERRISK_RATE_LIMIT`); see [api.md §4](api.md).
+- [ ] **SSO / multi-key auth** — per-tenant keys or SSO in front of the API
+  (client briefs are confidential).
+- [ ] **CI/CD** — run `pytest` + the security scanner + the Docker build in
+  CI; push tagged images to a registry on release.
 - [ ] **DB migration tooling** — once sessions/settings move to Postgres, add
   Alembic migrations.
 

@@ -7,6 +7,8 @@
 #   2. Lint check             (ruff check — formatting + style rules)
 #   3. Run the test suite     (pytest, incl. the tests/validate suite)
 #   4. Security scan          (scripts/security_scan.py)
+#   5. Docker build + run     (build the image, boot the container, verify
+#                              /api/health and the served frontend)
 #
 # The quantitative engine and all tests run offline — no API key is needed.
 # `ruff format --check` is intentionally NOT run: the codebase predates the
@@ -53,3 +55,47 @@ jobs:
 
       - name: Security scan
         run: python scripts/security_scan.py
+
+  docker-build:
+    name: Docker build + run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t cyberrisk:ci .
+
+      - name: Boot the container (no LLM key needed — engine is offline)
+        run: |
+          docker run -d --name cyberrisk-ci -p 8000:8000 \
+            -e LLM_PROVIDER=deepseek \
+            cyberrisk:ci
+          # Wait for the API to come up (healthcheck also guards this).
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8000/api/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+
+      - name: Verify API health
+        run: |
+          curl -sf http://127.0.0.1:8000/api/health | grep -q '"status":"ok"'
+          echo "API /api/health -> OK"
+
+      - name: Verify frontend is served
+        run: |
+          # The container serves the built SPA; without a built dist the API
+          # still returns the "not built" JSON — so assert the UI shell loads.
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/)
+          test "$code" = "200"
+          echo "Frontend route / -> HTTP $code"
+
+      - name: Verify API docs are served
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/docs)
+          test "$code" = "200"
+          echo "API docs /docs -> HTTP $code"
+
+      - name: Tear down
+        run: docker rm -f cyberrisk-ci
