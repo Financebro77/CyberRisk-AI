@@ -48,15 +48,50 @@ class ConversationMemory:
         return kept
 
     def save(self, path: str | Path) -> None:
-        """Persist the conversation as JSON (best-effort)."""
+        """Persist the conversation as JSON (best-effort).
+
+        Privacy: when ``allow_client_data_storage`` is False (the default,
+        see config/privacy.yaml), the persisted payload is scrubbed of
+        personal data before it is written.  Secrets are always scrubbed.
+        """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.messages, ensure_ascii=False, indent=2), encoding="utf-8")
+        payload = _scrub_messages(self.messages)
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def load(self, path: str | Path) -> None:
         path = Path(path)
         if path.exists():
             self.messages = json.loads(path.read_text(encoding="utf-8"))
+
+
+def _scrub_messages(messages: list[dict]) -> list[dict]:
+    """Return a copy of ``messages`` with personal data scrubbed.
+
+    Personal data (emails, phones, names, local paths) is removed when the
+    privacy policy disallows client-data storage; secrets are always removed.
+    """
+    try:
+        from cyberrisk.privacy import load_privacy_config, sanitise_log
+
+        policy = load_privacy_config()
+    except ImportError:  # pragma: no cover - privacy module always present
+        return list(messages)
+
+    scrubbed: list[dict] = []
+    for m in messages:
+        out = dict(m)
+        if isinstance(out.get("content"), str):
+            content = out["content"]
+            if not policy.allow_client_data_storage:
+                content = sanitise_log(content)
+            else:
+                from cyberrisk.privacy import redact_pii
+
+                content = redact_pii(content)
+            out["content"] = content
+        scrubbed.append(out)
+    return scrubbed
 
 
 @dataclass

@@ -25,6 +25,15 @@ from cyberrisk.agent.schemas import AgentConfig
 
 st.set_page_config(page_title="CyberRisk Consultant", page_icon="🛡️", layout="centered")
 
+# Install the sanitised root logger so no log line can leak a secret or
+# personal data (see cyberrisk.privacy).
+try:
+    from cyberrisk.privacy import configure_sanitised_logging
+
+    configure_sanitised_logging()
+except ImportError:  # pragma: no cover - privacy module always present
+    pass
+
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
@@ -128,4 +137,6 @@ if prompt:
             except RuntimeError as exc:
                 answer = f"⚠️ {exc}"
         st.markdown(answer)
+    if getattr(agent, "last_privacy_notice", ""):
+        st.caption(f"🔒 {agent.last_privacy_notice}")
     st.session_state.messages.append({"role": "assistant", "content": answer})

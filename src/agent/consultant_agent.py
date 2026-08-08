@@ -169,6 +169,23 @@ def safe_advise(
     Returns
         SafetyVerdict if intercepted; otherwise the same as `advise()`.
     """
+    # Privacy input guard: secrets are blocked, personal data redacted,
+    # before the request text reaches the safety guards / agent.
+    try:
+        from cyberrisk.privacy import check_input
+
+        pv = check_input(request_text or "")
+        if pv.action == "blocked":
+            return SafetyVerdict(
+                class_name="privacy_block",
+                flagged=True,
+                response=pv.notice or "That message was not processed.",
+                assumptions_cited=[],
+            )
+        request_text = pv.message or request_text
+    except ImportError:  # pragma: no cover - privacy module always present
+        pass
+
     verdict = guard_request(request_text, provided)
     if verdict.flagged:
         return verdict

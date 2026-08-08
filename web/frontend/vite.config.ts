@@ -4,8 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Production is served from https://nohackers_allowed.com — build with a
-  // domain base so asset URLs resolve under it.
+  // Base path for built assets.  Set to the production deployment path if the
+  // app is served from a sub-path (e.g. /cyberrisk/); the root '/'
+  // is correct for a domain or subdomain deployment.
   base: '/',
   plugins: [react(), tailwindcss()],
   server: {

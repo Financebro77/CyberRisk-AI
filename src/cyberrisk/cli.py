@@ -125,6 +125,14 @@ def _clear_screen() -> None:
 
 def main() -> int:
     """Launch the CyberRisk AI Consultant."""
+    # Install the sanitised root logger so no log line can leak a secret or
+    # personal data (see cyberrisk.privacy).
+    try:
+        from cyberrisk.privacy import configure_sanitised_logging
+
+        configure_sanitised_logging()
+    except ImportError:  # pragma: no cover - privacy module always present
+        pass
     _print_startup()
 
     # Construct the agent: this connects to the LLM (reads .env), seeds the

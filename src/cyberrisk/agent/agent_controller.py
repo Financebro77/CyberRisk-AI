@@ -106,6 +106,8 @@ class CyberRiskAgent:
         # its arguments, and its data (so the UI can render charts from the
         # figures the model actually used).  Reset at the start of each chat().
         self.tool_trace: list[dict] = []
+        # Last privacy notice returned by the input guard (UI surfaces this).
+        self.last_privacy_notice: str = ""
         self._init_system()
 
     def _init_system(self) -> None:
@@ -238,6 +240,23 @@ class CyberRiskAgent:
         does not leak into subsequent turns (it is per-query).
         """
         self.tool_trace = []
+        # Privacy input guard: secrets are blocked outright; personal data
+        # (emails, phones, names, local paths) is redacted before the text
+        # reaches the model, per config/privacy.yaml.
+        try:
+            from cyberrisk.privacy import check_input
+
+            verdict = check_input(user_message)
+            self.last_privacy_notice = verdict.notice
+            if verdict.action == "blocked":
+                blocked = append_disclosure(verdict.notice or "That message was not processed.")
+                # Record a neutral marker in history — never the secret itself.
+                self.memory.append({"role": "user", "content": "[message blocked by privacy guard]"})
+                self.memory.append({"role": "assistant", "content": blocked})
+                return blocked
+            user_message = verdict.message
+        except ImportError:  # pragma: no cover - privacy module always present
+            self.last_privacy_notice = ""
         base_system = self.memory.get()[0]["content"] if self.memory.get() else SYSTEM_PROMPT
         rag_system = self._system_prompt_with_rag(user_message)
         injected = False

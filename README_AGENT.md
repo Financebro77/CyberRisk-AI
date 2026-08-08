@@ -24,7 +24,7 @@ User
 ## 1. Installation
 
 ```powershell
-cd C:\Users\jahe-\cyberrisk
+cd /path/to/project
 .venv\Scripts\python -m pip install -e ".[agent]"
 ```
 
@@ -73,7 +73,7 @@ print a clear message instead of failing mid-conversation.
 ### Streamlit (recommended)
 
 ```powershell
-cd C:\Users\jahe-\cyberrisk
+cd /path/to/project
 .venv\Scripts\python -m streamlit run src\cyberrisk\agent\app.py
 ```
 
@@ -84,7 +84,7 @@ conversation.
 ### Terminal (quick testing)
 
 ```powershell
-cd C:\Users\jahe-\cyberrisk
+cd /path/to/project
 .venv\Scripts\python -m cyberrisk.agent.run_chat
 ```
 

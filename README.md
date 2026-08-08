@@ -727,6 +727,52 @@ knowledge/              # corpus, datasets, manifests, derived artifacts (see §
 
 ---
 
+## Privacy and Security
+
+CyberRisk AI is designed so that **no personal information is stored** and
+the repository is safe to publish publicly.
+
+**What the platform does not store:**
+
+- **No personal information.** CyberRisk AI does not store personal data
+  (names, emails, phone numbers, addresses). The input-privacy guard
+  detects and redacts personal data before it reaches the model
+  ([`src/cyberrisk/privacy.py`](src/cyberrisk/privacy.py)).
+- **No client-identifiable data on disk.** Client conversations and firm
+  facts live in memory for the duration of a session; they are not written
+  to persistent storage by default. Persisting a conversation scrubs
+  personal data first (see `config/privacy.yaml`).
+- **No private datasets.** The repository ships source code, documentation,
+  and **synthetic example data only**. Public benchmark datasets (Verizon
+  DBIR, IBM Cost of a Data Breach) are referenced by calibration table, not
+  bundled. Licensed or client-confidential corpora must be sourced and held
+  outside version control by the operator.
+
+**Your responsibilities:**
+
+- **Do not upload confidential client information.** Users should not upload
+  confidential client information into the repository, issues, or
+  discussions.
+- **API credentials are yours, stored locally.** All secrets are read from
+  environment variables or a local `.env` file (gitignored). Never commit a
+  key. See [§6.3 Environment configuration](#63-environment-configuration)
+  and [`SECURITY.md`](SECURITY.md).
+- **All examples are synthetic.** The example companies and datasets
+  (`examples/`, `data/examples/`, `config/benchmark_profiles.yaml`) are
+  fictional. No real company is represented.
+
+**The repository contains no private datasets and no secrets.** The
+`.gitignore` blocks `.env`, private keys, raw/private/client data
+directories, generated reports, and local databases. A security scanner
+(`scripts/security_scan.py`) and pre-commit hooks
+([`.pre-commit-config.yaml`](.pre-commit-config.yaml)) enforce this before
+anything is committed.
+
+See [`SECURITY.md`](SECURITY.md) for the full security policy, vulnerability
+reporting, and data-protection statement.
+
+---
+
 ## License & Data Policy
 
 This repository is **source code and documentation only**. Confidential client materials, licensed cyber datasets, and generated reports are **not committed** — see `.gitignore`. Curated example benchmark data is included by design; licensed corpora must be sourced independently.

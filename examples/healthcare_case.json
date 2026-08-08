@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "_label": "SYNTHETIC DEMONSTRATION DATA — fictional example for illustration only. No real company, person, or dataset is represented. All figures are invented for tutorial purposes and are not a quote, estimate, or guarantee.",
+  "purpose": "Shows how a company brief flows into the CyberRisk AI engine (scoring, Monte Carlo loss simulation, insurance structuring). Replace every field below with your own data before running a real assessment.",
+  "company": {
+    "name": "Harbourview Regional Health Network",
+    "industry": "Healthcare",
+    "country": "United States",
+    "revenue_usd": 850000000,
+    "employees": 6200,
+    "customer_records": 2100000,
+    "sensitive_data_types": ["protected health information", "medical billing records"],
+    "technology_dependency": "High",
+    "cloud_dependency": "High",
+    "third_party_dependency": "High"
+  },
+  "cyber_controls": {
+    "mfa_coverage": "Partial (~60% of users)",
+    "privileged_access_management": "Defined for admins, gaps in third-party accounts",
+    "network_segmentation": "Partial between clinical and corporate networks",
+    "endpoint_detection": "EDR on servers, limited coverage on clinical workstations",
+    "backup_strategy": "Daily backups, tested quarterly",
+    "patch_cadence": "Monthly, with critical vulnerabilities lagging",
+    "incident_response_plan": "Documented, tested annually",
+    "vendor_assessment": "Onboarding-only"
+  },
+  "loss_scenarios": [
+    {
+      "scenario": "ransomware",
+      "description": "Encryption of clinical systems with business-interruption",
+      "frequency_model": "poisson",
+      "lambda_annual": 0.42,
+      "severity_model": "lognormal",
+      "scale_usd": 5500000,
+      "sigma": 1.1
+    },
+    {
+      "scenario": "data_breach",
+      "description": "Exfiltration of protected health information",
+      "frequency_model": "poisson",
+      "lambda_annual": 0.30,
+      "severity_model": "lognormal",
+      "scale_usd": 4800000,
+      "sigma": 1.0
+    },
+    {
+      "scenario": "business_interruption",
+      "description": "Prolonged outage of clinical systems",
+      "frequency_model": "poisson",
+      "lambda_annual": 0.25,
+      "severity_model": "lognormal",
+      "scale_usd": 3900000,
+      "sigma": 1.2
+    },
+    {
+      "scenario": "supply_chain",
+      "description": "Compromise via a critical third-party vendor",
+      "frequency_model": "poisson",
+      "lambda_annual": 0.20,
+      "severity_model": "lognormal",
+      "scale_usd": 3100000,
+      "sigma": 1.1
+    }
+  ],
+  "insurance_program": {
+    "per_occurrence_deductible_usd": 1000000,
+    "per_occurrence_limit_usd": 15000000,
+    "annual_aggregate_deductible_usd": 2000000,
+    "annual_aggregate_limit_usd": 30000000,
+    "coinsurance": 0.0,
+    "risk_appetite": "Retain up to $2M per event"
+  },
+  "expected_output_illustration": {
+    "note": "Illustrative only — run examples/run_full_pipeline.py with a real brief for actual numbers.",
+    "risk_score": "High (roughly 70-80/100 band for this profile)",
+    "top_drivers": ["industry_targeting", "data_sensitivity", "patch_cadence", "privileged_access"],
+    "eal_usd": "order of magnitude ~$3-5M",
+    "var_99_usd": "order of magnitude ~$20-30M",
+    "es_99_usd": "order of magnitude ~$30-45M"
+  },
+  "disclaimer": "SYNTHETIC DEMONSTRATION DATA. This file contains no real company, no real personal information, and no confidential dataset. It is provided solely to demonstrate the input format of CyberRisk AI. Do not treat any figure here as a real cyber risk estimate."
+}

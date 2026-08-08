@@ -1,8 +1,8 @@
 """FastAPI entrypoint for the CyberRisk AI web platform.
 
 Run (dev):
-    cd C:\\Users\\jahe-\\cyberrisk
-    .venv\\Scripts\\python -m uvicorn cyberrisk.api.main:app --port 8000
+    cd /path/to/project
+    .venv/Scripts/python -m uvicorn cyberrisk.api.main:app --port 8000
 
 The API wraps the existing tool layer read-only -- no engine or agent
 module is modified.  In production the built frontend (web/frontend/dist)
@@ -28,6 +28,15 @@ from cyberrisk.api.routes import router
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 FRONTEND_DIST = REPO_ROOT / "web" / "frontend" / "dist"
 
+# Install the sanitised root logger so uvicorn/app log lines cannot leak a
+# secret or personal data (see cyberrisk.privacy).
+try:
+    from cyberrisk.privacy import configure_sanitised_logging
+
+    configure_sanitised_logging()
+except ImportError:  # pragma: no cover - privacy module always present
+    pass
+
 app = FastAPI(
     title="CyberRisk AI",
     description="Marsh/Aon-style commercial cyber risk assessment, loss modelling and insurance structuring.",
@@ -36,13 +45,14 @@ app = FastAPI(
 
 # CORS: allow the Vite dev server (localhost:5173) during development and the
 # production origin.  In production the frontend is served same-origin by this
-# app, so no extra origin is needed there.
+# app, so no extra origin is needed there.  A production deployment should
+# configure the real deployment origin explicitly rather than leaving the
+# localhost allow-list in place.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://nohackers_allowed.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],

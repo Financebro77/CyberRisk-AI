@@ -70,6 +70,9 @@ class ChatTurnResponse(BaseModel):
     history: list[dict[str, Any]] = Field(default_factory=list)
     safety: dict[str, Any] | None = None
     model: str = ""
+    # Privacy notice from the input guard, surfaced to the UI when the
+    # user's message was redacted or blocked (e.g. contained personal data).
+    privacy_notice: str = ""
 
 
 def _history(agent: CyberRiskAgent) -> list[dict[str, Any]]:
@@ -134,6 +137,7 @@ def chat_turn(session_id: str, req: ChatTurnRequest) -> ChatTurnResponse:
                 history=_history(agent),
                 safety=safety,
                 model=agent.client.model_name,
+                privacy_notice=agent.last_privacy_notice,
             )
 
     try:
@@ -148,6 +152,7 @@ def chat_turn(session_id: str, req: ChatTurnRequest) -> ChatTurnResponse:
         history=_history(agent),
         safety=None,
         model=agent.client.model_name,
+        privacy_notice=agent.last_privacy_notice,
     )
 
 

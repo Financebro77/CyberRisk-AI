@@ -1,0 +1,31 @@
+# =====================================================================
+# CyberRisk AI — Privacy configuration
+# =====================================================================
+# Central switchboard for the platform's privacy and data-handling
+# behaviour.  Every privacy-relevant runtime decision reads from here
+# (via src/cyberrisk/privacy.py), so an operator can tune data handling
+# without touching code.
+#
+# The values below are the safe defaults for a public deployment.
+# =====================================================================
+
+# Master switch: when True the platform enforces the privacy controls in
+# this file.  Set to False ONLY for a controlled, single-tenant internal
+# deployment where you explicitly accept permissive data handling.
+privacy_mode: true
+
+# Whether the platform will ingest, store, or log personal data
+# (names, emails, phone numbers, addresses) supplied by a user.
+# False = such data is redacted or refused before processing.
+allow_personal_data: false
+
+# Whether client-identifiable data (firm names, engagement-scoped loss
+# history, policy wordings) may be persisted on disk (data/client_data/,
+# knowledge/datasets/history/, session memory).
+# False = client data is kept in-memory only and never written to disk.
+allow_client_data_storage: false
+
+# Whether sensitive data may appear in log output (conversation text,
+# tool arguments, uploaded document contents, API keys).
+# False = log lines are sanitised before they are written.
+log_sensitive_information: false
