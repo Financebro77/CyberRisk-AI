@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CyberRisk AI
 
 > **An AI-powered cyber risk advisory platform combining cyber threat intelligence, Monte Carlo loss modelling, and insurance analytics.**
@@ -246,3 +247,7 @@ This repository is **source code and documentation only**. Confidential client m
 ---
 
 *CyberRisk AI is a research and modelling platform, not licensed financial advice. Outputs are model estimates for analytical use, not guarantees of loss or recovery.*
+=======
+# CyberRisk-AI
+AI-Powered cyber risk advisory agent combining threat intelligence, stochastic loss modelling, and insurance analytics
+>>>>>>> 9aae21a5b4c7e10ec690b5597865647cde739484
