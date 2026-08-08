@@ -26,7 +26,7 @@ from cyberrisk.agent.deepseek_client import DeepSeekClient
 from cyberrisk.agent.disclosure import append_disclosure
 from cyberrisk.agent.memory import ClientFacts, ConversationMemory
 from cyberrisk.agent.model_mechanics import explain_model_mechanics
-from cyberrisk.agent.prompts import SYSTEM_PROMPT
+from cyberrisk.agent.prompts import SENIOR_CONSULTANT_DIRECTIVES, SYSTEM_PROMPT
 from agent.safety import OutputCheck  # existing hallucination guard (src/agent)
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief, PolicyInput, ToolResult
 from cyberrisk.agent.sensitivity_tools import run_control_improvement_scenario
@@ -36,6 +36,7 @@ from cyberrisk.agent.tools import (
     assess_company_risk,
     generate_risk_report,
     run_loss_simulation,
+    search_incidents,
 )
 
 # Tool name -> callable(brief_fields: dict, extra_args: dict) -> dict
@@ -66,6 +67,12 @@ _TOOL_IMPLEMENTATIONS = {
         control_change=extra.get("control_change"),
         n_years=extra.get("n_years"),
     ),
+    "search_incidents": lambda brief, extra: search_incidents(
+        industry=extra.get("industry"),
+        attack_type=extra.get("attack_type"),
+        company=extra.get("company"),
+        limit=extra.get("limit"),
+    ),
 }
 
 # Tool arguments that are client-facts rather than tool-specific knobs.
@@ -95,6 +102,10 @@ class CyberRiskAgent:
         self.client = client or DeepSeekClient(self.config)
         self.memory = memory or ConversationMemory()
         self.facts = facts or ClientFacts()
+        # Tool trace for the current turn: every tool that ran this turn,
+        # its arguments, and its data (so the UI can render charts from the
+        # figures the model actually used).  Reset at the start of each chat().
+        self.tool_trace: list[dict] = []
         self._init_system()
 
     def _init_system(self) -> None:
@@ -107,7 +118,104 @@ class CyberRiskAgent:
         """
         if not self.memory.get() or self.memory.get()[0].get("role") != "system":
             methodology = explain_model_mechanics().full_text()
-            self.memory.append({"role": "system", "content": SYSTEM_PROMPT + "\n\n" + methodology})
+            self.memory.append(
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT
+                    + "\n\n"
+                    + SENIOR_CONSULTANT_DIRECTIVES
+                    + "\n\n"
+                    + methodology,
+                }
+            )
+
+    # ------------------------------------------------------------------
+    # RAG context injection
+    # ------------------------------------------------------------------
+
+    def _rag_context(self, query: str) -> str:
+        """Retrieve knowledge relevant to ``query`` and render it as context.
+
+        Two retrieval sources:
+          1. the vector store — semantic chunk retrieval (documents),
+          2. the incident index — structured historical incidents, matched by
+             field keywords in the query (industry / attack type).
+
+        Returns an empty string when neither source returns anything, so the
+        agent still works without a populated knowledge base (retrieval is
+        additive, never required).
+        """
+        blocks: list[str] = []
+
+        # 1. Semantic chunk retrieval from the vector store.
+        try:
+            from cyberrisk.knowledge.rag import Retriever
+            from cyberrisk.knowledge.config import load_ingest_config
+
+            retriever = Retriever.from_derived(derived_root=load_ingest_config().derived_path)
+            results = retriever.retrieve(query)
+            if results:
+                blocks.append(retriever.format_context(results))
+        except FileNotFoundError:
+            pass  # no vector store yet — skip
+        except Exception:  # noqa: BLE001 — never let retrieval break a consult
+            pass
+
+        # 2. Structured incident retrieval by field keywords in the query.
+        try:
+            from cyberrisk.knowledge.incidents import load_incident_index
+
+            index = load_incident_index()
+            incidents = self._incidents_for_query(index, query)
+            for inc in incidents[:3]:
+                blocks.append(inc.narrative())
+        except Exception:  # noqa: BLE001 — incidents are optional context
+            pass
+
+        return "\n\n".join(blocks)
+
+    @staticmethod
+    def _incidents_for_query(index, query: str) -> list:
+        """Match incidents to a query by industry/attack-type keywords."""
+        q = query.lower()
+        industries = {
+            "healthcare": "healthcare", "health": "healthcare", "hospital": "healthcare",
+            "pharma": "healthcare",
+            "finance": "finance", "bank": "finance", "financial": "finance",
+            "insur": "finance", "fintech": "finance",
+            "retail": "retail", "store": "retail", "e-commerce": "retail",
+            "manufactur": "manufacturing", "industrial": "manufacturing",
+            "energy": "energy", "utility": "energy", "grid": "energy", "power": "energy",
+            "government": "government", "public sector": "government", "agency": "government",
+            "technology": "technology", "software": "technology", "cloud": "technology",
+            "saas": "technology", "tech": "technology",
+        }
+        attack_types = {
+            "ransom": "ransomware", "extort": "ransomware",
+            "bec": "BEC", "wire fraud": "BEC", "email compromise": "BEC",
+            "breach": "breach", "data theft": "breach",
+            "supply": "supply-chain", "third-party": "supply-chain",
+        }
+        industry = next((v for k, v in industries.items() if k in q), None)
+        attack_type = next((v for k, v in attack_types.items() if k in q), None)
+        if industry is None and attack_type is None:
+            return []
+        return index.search(industry=industry, attack_type=attack_type, limit=3)
+
+    def _system_prompt_with_rag(self, query: str) -> str:
+        """The system prompt, with retrieved-knowledge context appended.
+
+        The base prompt + methodology is seeded once at init; per-query
+        retrieved context is appended so the LLM reasons over both engine
+        numbers (via tools) and cited knowledge.
+        """
+        base = self.memory.get()[0]["content"] if self.memory.get() else SYSTEM_PROMPT
+        context = self._rag_context(query)
+        if not context:
+            return base
+        from cyberrisk.agent.prompts import RAG_RULES
+
+        return base + "\n\n" + RAG_RULES + "\n\nRETRIEVED KNOWLEDGE (cite by [citation: chunk_id]):\n" + context
 
     # ------------------------------------------------------------------
     # Public API
@@ -122,9 +230,27 @@ class CyberRiskAgent:
         Every FINAL answer carries the mandatory model-limitations disclosure
         at the end (idempotent -- the memory stores the answer with the
         disclosure so later turns do not duplicate it).
+
+        If the knowledge vector store is populated, the user's message is used
+        as a retrieval query; retrieved context is injected into the system
+        prompt for this turn so the LLM reasons over cited knowledge AND engine
+        tool results.  The per-turn context is removed in ``finally`` so it
+        does not leak into subsequent turns (it is per-query).
         """
-        self._append_user(user_message, welcome=welcome)
-        answer, tool_metrics = self._run_tool_loop()
+        self.tool_trace = []
+        base_system = self.memory.get()[0]["content"] if self.memory.get() else SYSTEM_PROMPT
+        rag_system = self._system_prompt_with_rag(user_message)
+        injected = False
+        if rag_system != base_system:
+            self.memory.messages.insert(0, {"role": "system", "content": rag_system})
+            injected = True
+        try:
+            self._append_user(user_message, welcome=welcome)
+            answer, tool_metrics = self._run_tool_loop()
+        finally:
+            if injected and self.memory.messages:
+                # Pop the per-turn RAG system message, restoring the base.
+                self.memory.messages.pop(0)
         answer = append_disclosure(answer)
         self.memory.append({"role": "assistant", "content": answer})
         return answer
@@ -230,6 +356,15 @@ class CyberRiskAgent:
         for tc in tool_calls:
             result = self._execute_one(tc["name"], tc.get("arguments", {}))
             self.memory.append(result.as_tool_message(tc["id"]))
+            # Record the trace for chart rendering: the UI only ever charts
+            # figures that a tool actually returned -- never fabricated ones.
+            self.tool_trace.append({
+                "name": tc["name"],
+                "arguments": tc.get("arguments", {}),
+                "ok": result.ok,
+                "error": result.error,
+                "data": result.data,
+            })
             if result.ok and result.data:
                 for key in ("eal", "var_99", "es_99"):
                     if key in result.data:

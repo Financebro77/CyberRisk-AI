@@ -515,6 +515,20 @@ def run_loss_simulation(brief: CompanyBrief, n_years: int | None = None) -> dict
 
     contrib_analysis = analyze_scenario_contribution(brief, n_years=n_years)
     contrib_with_drivers = contrib_analysis.get("scenarios", []) if contrib_analysis.get("status") == "ok" else []
+    # Loss exceedance curve: P(loss >= X) across the simulated sample, sampled
+    # at a modest fixed grid so the dashboard's curve uses real engine data
+    # without shipping 100k numbers.  Uses the same stable PML quantiles as
+    # the rest of the response.
+    exceed_grid = [0.0, 0.25e6, 0.5e6, 1.0e6, 2.0e6, 5.0e6, 10.0e6, 20.0e6, 50.0e6]
+    exceed_probs = np.clip(
+        np.mean(losses[None, :] >= np.asarray(exceed_grid)[:, None], axis=1),
+        0.0,
+        1.0,
+    )
+    exceedance = [
+        {"loss": float(x), "prob": float(p)}
+        for x, p in zip(exceed_grid, exceed_probs)
+    ]
     return {
         "status": "ok",
         "firm_name": scored.firm_name,
@@ -531,6 +545,7 @@ def run_loss_simulation(brief: CompanyBrief, n_years: int | None = None) -> dict
         "pml_1in1000": m.p99_9,
         "prob_zero_loss": m.prob_zero_loss,
         "loss_distribution": quantiles,
+        "loss_exceedance": exceedance,
         "aal_by_scenario": dict(ordered),
         "scenario_contribution": {k: contrib[k] for k, _ in ordered},
         "scenario_contribution_detail": contrib_with_drivers,
@@ -706,6 +721,39 @@ def _evaluate_structure(
     }
 
 
+def search_incidents(
+    industry: str | None = None,
+    attack_type: str | None = None,
+    company: str | None = None,
+    limit: int = 3,
+) -> dict:
+    """Tool 5: search historical cyber incidents by field.
+
+    Queries the IncidentIndex over knowledge/corpus/incidents/curated/ by
+    industry / attack type / company and returns structured incident facts
+    (company, attack, loss, root cause, lessons learned) each carrying a
+    citation marker the consultant can reference.  Returns a JSON-serialisable
+    dict; no brief is required (this is a knowledge lookup, not a model run).
+    """
+    from cyberrisk.knowledge.incidents import load_incident_index
+
+    index = load_incident_index()
+    hits = index.search(
+        industry=industry, attack_type=attack_type, company=company, limit=limit
+    )
+    return {
+        "status": "ok",
+        "query": {
+            "industry": industry,
+            "attack_type": attack_type,
+            "company": company,
+            "limit": limit,
+        },
+        "count": len(hits),
+        "incidents": [inc.to_dict() for inc in hits],
+    }
+
+
 def generate_risk_report(
     brief: CompanyBrief,
     firm_name: str | None = None,
@@ -836,6 +884,20 @@ TOOL_SCHEMAS: list[dict] = [
             **_brief_properties(),
             "control_change": {"type": "string", "description": "Improvement to model, e.g. 'implement MFA', 'improve segmentation', 'reduce privileged access', 'add immutable backups'"},
             "n_years": {"type": "integer", "description": "Simulation years (default 100000)"},
+        },
+    ),
+    _tool(
+        "search_incidents",
+        "Search historical cyber incidents by industry, attack type, or company. "
+        "Returns structured incident facts (company, attack type, financial loss, root cause, "
+        "lessons learned), each with a citation marker the consultant can reference. "
+        "Use when the client's question relates to a historical breach, attack pattern, "
+        "or sector precedent.",
+        {
+            "industry": {"type": "string", "description": "Industry key (healthcare, finance, retail, manufacturing, energy, government, technology)"},
+            "attack_type": {"type": "string", "description": "e.g. 'ransomware', 'BEC', 'breach', 'supply-chain'"},
+            "company": {"type": "string", "description": "Company name (substring)"},
+            "limit": {"type": "integer", "description": "Max incidents to return (default 3)"},
         },
     ),
 ]

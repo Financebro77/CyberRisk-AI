@@ -161,6 +161,242 @@ def check_llm_output(
 
 
 # ---------------------------------------------------------------------------
+# RAG output check — extend the base hallucination guard with retrieval-aware
+# verification, so the "never fabricate facts without supporting documents"
+# guarantee is enforced post-generation, not just by prompt.
+# ---------------------------------------------------------------------------
+
+# A citation marker in an answer: [citation: <chunk_id>]
+_CITATION_RE = re.compile(r"\[citation:\s*([^\]]+)\]", re.IGNORECASE)
+
+
+def _extract_figures(text: str) -> list[float]:
+    """Extract all numeric figures (with k/m/b multipliers) from text."""
+    out: list[float] = []
+    for m in re.finditer(
+        r"[$]?\s?([\d][\d,]*(?:\.\d+)?)\s?(k|m|b|million|billion|thousand)?",
+        text,
+        re.IGNORECASE,
+    ):
+        try:
+            raw = m.group(1).replace(",", "")
+            number = float(raw)
+        except ValueError:
+            continue
+        unit = m.group(2)
+        mult = {
+            "k": 1e3, "m": 1e6, "b": 1e9,
+            "thousand": 1e3, "million": 1e6, "billion": 1e9,
+        }.get((unit or "").lower(), 1.0)
+        out.append(number * mult)
+    return out
+
+
+def _figure_in_texts(value: float, texts: list[str], tolerance: float = 0.05) -> bool:
+    """True if ``value`` matches a number in any ``texts`` within ``tolerance``."""
+    for t in texts:
+        for fig in _extract_figures(t):
+            if fig > 0 and abs(value - fig) / fig < tolerance:
+                return True
+    return False
+
+
+def check_rag_output(
+    text: str,
+    validated_metrics: dict[str, float] | None = None,
+    retrieved_chunks: list | None = None,
+) -> OutputCheck:
+    """Check an LLM response that may cite retrieved knowledge.
+
+    Runs the base ``check_llm_output`` (named parties, over-certainty,
+    unsupported figures vs engine metrics), then adds three RAG-specific
+    checks:
+
+      1. CITATION RESOLUTION -- every [citation: chunk_id] in the answer must
+         resolve to a retrieved chunk.  A citation to nothing is a fabrication.
+      2. DOCUMENT-FIGURE CLAIMS -- a claim-framed figure that does NOT match a
+         validated engine metric must match a retrieved document's content.
+         If it matches neither, it is invented.
+      3. DOCUMENT FACT GROUNDING -- if the answer cites a retrieved chunk, the
+         chunk must be one of the retrieved chunks (already guaranteed by #1);
+         this is the "never assert a document fact without supporting evidence".
+
+    Parameters
+        text               the LLM's generated response
+        validated_metrics  validated engine figures (EAL/VaR/ES/PML) — engine
+                           numbers stay authoritative
+        retrieved_chunks   list of RetrievedChunk (or objects with .chunk_id,
+                           .content) the retriever found
+
+    Returns
+        OutputCheck.  ok=False if any check fires — the caller should fall back
+        to the deterministic rule-based answer.
+    """
+    # Base checks (named parties, over-certainty, engine-figure claims).
+    # NOTE: base failures are MERGED with the RAG checks below, not returned
+    # early — a [MODEL OUTPUT]-tagged figure may be flagged by both the base
+    # unsupported-figure check AND the MODEL-OUTPUT check, and the caller needs
+    # the specific reason.  If nothing is retrieved, the base verdict stands.
+    base = check_llm_output(text, validated_metrics)
+
+    if not retrieved_chunks:
+        # No retrieval happened: nothing extra to verify.  (The agent's prompt
+        # still forbids inventing facts, and base checks catch unsupported
+        # engine figures.)
+        return base
+
+    by_id = {c.chunk_id: c for c in retrieved_chunks}
+    contents = [c.content for c in retrieved_chunks]
+    offending: list[str] = list(base.offending or [])
+    reason_parts: list[str] = []
+
+    # 1. Citation resolution.
+    cited_ids = set(_CITATION_RE.findall(text))
+    for cid in cited_ids:
+        if cid not in by_id:
+            offending.append(f"citation does not resolve: {cid}")
+    if any("citation does not resolve" in o for o in offending):
+        reason_parts.append("the response cites a document that was not retrieved")
+
+    # 2. Document-figure claims: a claim-framed figure that isn't an engine
+    #    metric must match a retrieved document.
+    if validated_metrics:
+        for m in re.finditer(
+            r"[$]\s?([\d][\d,]*(?:\.\d+)?)\s?(k|m|b|million|billion|thousand)?",
+            text,
+            re.IGNORECASE,
+        ):
+            raw = m.group(1).replace(",", "")
+            try:
+                value = float(raw) * {
+                    "k": 1e3, "m": 1e6, "b": 1e9,
+                    "thousand": 1e3, "million": 1e6, "billion": 1e9,
+                }.get((m.group(2) or "").lower(), 1.0)
+            except ValueError:
+                continue
+            # Claim-framed?
+            claim_patterns = [
+                re.compile(r"(document|the (source|report|regulation) (says|states|notes|requires)|"
+                           r"according to the retrieved|the retrieved (doc|document) states)\b", re.I),
+            ]
+            window = text[max(0, m.start() - 60): m.end() + 20]
+            is_doc_claim = any(p.search(window) for p in claim_patterns)
+            if not is_doc_claim:
+                continue
+            # It must be an engine metric (already allowed by base) OR a
+            # retrieved document figure.
+            is_engine = any(
+                abs(value - v) / max(v, 1e-9) < 0.05 for v in validated_metrics.values()
+            )
+            if not is_engine and not _figure_in_texts(value, contents):
+                offending.append(f"unsupported document figure: ${raw}")
+
+    # 3. Document-fact grounding: every cited chunk must be retrieved (already
+    #    covered by #1), and any document-framed assertion must carry a citation.
+    #    A document-framed claim with NO citation is unverifiable -> flag.
+    doc_claim_phrases = re.compile(
+        r"(the (regulation|directive|report|document|source) (says|states|notes|requires|establishes)|"
+        r"according to (the|a) (regulation|directive|report|document|source))\b",
+        re.I,
+    )
+    for m in doc_claim_phrases.finditer(text):
+        window = text[m.start(): m.end() + 200]
+        if not _CITATION_RE.search(window):
+            offending.append("document fact without citation")
+            break
+
+    # 4. MODEL-OUTPUT tag verification — every [MODEL OUTPUT]-tagged figure must
+    #    match a validated engine metric.  A fabricated model figure is flagged.
+    for m in re.finditer(
+        r"\[MODEL OUTPUT\][^\n]*?\$([\d][\d,]*(?:\.\d+)?)\s?(k|m|b|million|billion|thousand)?",
+        text,
+        re.IGNORECASE,
+    ):
+        try:
+            value = float(m.group(1).replace(",", "")) * {
+                "k": 1e3, "m": 1e6, "b": 1e9,
+                "thousand": 1e3, "million": 1e6, "billion": 1e9,
+            }.get((m.group(2) or "").lower(), 1.0)
+        except ValueError:
+            continue
+        if not any(
+            abs(value - v) / max(v, 1e-9) < 0.05 for v in validated_metrics.values()
+        ):
+            offending.append(f"MODEL OUTPUT figure not in tool results: ${m.group(1)}")
+
+    # 5. INDUSTRY-EVIDENCE tag grounding — every [INDUSTRY EVIDENCE]-tagged
+    #    claim must carry a citation that resolves, OR its figure must match a
+    #    retrieved document.  Otherwise it's ungrounded "evidence".
+    for m in re.finditer(r"\[INDUSTRY EVIDENCE\]", text, re.IGNORECASE):
+        window = text[m.start(): m.end() + 300]
+        has_citation = _CITATION_RE.search(window) or re.search(r"\[incident: ([^\]]+)\]", window)
+        has_grounding = False
+        for fm in re.finditer(
+            r"\$([\d][\d,]*(?:\.\d+)?)\s?(k|m|b|million|billion|thousand)?",
+            window,
+            re.IGNORECASE,
+        ):
+            try:
+                value = float(fm.group(1).replace(",", "")) * {
+                    "k": 1e3, "m": 1e6, "b": 1e9,
+                    "thousand": 1e3, "million": 1e6, "billion": 1e9,
+                }.get((fm.group(2) or "").lower(), 1.0)
+            except ValueError:
+                continue
+            if _figure_in_texts(value, contents):
+                has_grounding = True
+                break
+        if not has_citation and not has_grounding:
+            offending.append("INDUSTRY EVIDENCE claim without a resolvable citation or matching document")
+
+    # 6. Assumption-presented-as-fact — a claim-framed $ figure that matches
+    #    NEITHER a tool metric NOR a retrieved document is an unsourced
+    #    assumption stated as a fact.
+    if validated_metrics:
+        for m in re.finditer(
+            r"\$([\d][\d,]*(?:\.\d+)?)\s?(k|m|b|million|billion|thousand)?",
+            text,
+            re.IGNORECASE,
+        ):
+            try:
+                value = float(m.group(1).replace(",", "")) * {
+                    "k": 1e3, "m": 1e6, "b": 1e9,
+                    "thousand": 1e3, "million": 1e6, "billion": 1e9,
+                }.get((m.group(2) or "").lower(), 1.0)
+            except ValueError:
+                continue
+            is_engine = any(
+                abs(value - v) / max(v, 1e-9) < 0.05 for v in validated_metrics.values()
+            )
+            if not is_engine and not _figure_in_texts(value, contents):
+                # Skip figures already flagged by check #2 (unsupported doc fig).
+                offending.append(f"assumption presented as fact: ${m.group(1)}")
+
+    # Include the base (non-RAG) reason if it fired, so a merged verdict
+    # explains both the base and the RAG-specific failures.
+    if base.reason:
+        reason_parts.insert(0, base.reason)
+    if any("unsupported document figure" in o for o in offending):
+        reason_parts.append("the response states a document figure that neither the engine nor the retrieved documents support")
+    if any("document fact without citation" in o for o in offending):
+        reason_parts.append("the response asserts a document fact without citing a retrieved chunk")
+    if any("MODEL OUTPUT figure not in tool results" in o for o in offending):
+        reason_parts.append("the response labels a figure [MODEL OUTPUT] that does not match any tool result")
+    if any("INDUSTRY EVIDENCE claim without" in o for o in offending):
+        reason_parts.append("the response labels a claim [INDUSTRY EVIDENCE] with no resolvable citation or matching document")
+    if any("assumption presented as fact" in o for o in offending):
+        reason_parts.append("the response presents an unsourced figure as a fact (an assumption, not verified)")
+
+    if offending:
+        return OutputCheck(
+            ok=False,
+            reason="; ".join(reason_parts) or "response failed RAG checks",
+            offending=offending,
+        )
+    return OutputCheck(ok=True, reason="")
+
+
+# ---------------------------------------------------------------------------
 # 1. Nonexistent / out-of-scope statistics
 # ---------------------------------------------------------------------------
 # Phrases that ask for a figure the calibrated model does not hold:
@@ -172,14 +408,41 @@ _NONEXISTENT_PATTERNS = [
     re.compile(r"(average|median|typical|standard).*(ransom|breach|loss|cost|payment|rate)", re.I),
     re.compile(r"(ransom|breach|loss|cost|payment|rate).*\bin\s+\b(canada|france|germany|india|china|japan|australia|brazil|kazakhstan|uk|ireland|scandinavia|nordic)\b", re.I),
     re.compile(r"(2026|2027|2028|2029|2030)\s+(breach|ransom|loss|cost|payment)", re.I),
-    re.compile(r"(what|how much|how many|quote|figure|number|stat)\b.*\b(paid?|cost|loss|premium|rate)\b", re.I),
     re.compile(r"(average|typical|median|standard)\b.*\b(ransom|breach|downtime|outage)\b", re.I),
 ]
+
+# Words that show the user is asking about THEIR OWN firm (a legitimate
+# modelling request) rather than a generic industry/regional statistic.
+_CLIENT_CONTEXT = re.compile(
+    r"\b(assess|model|our|my|we are|we're|our company|our firm|my company|"
+    r"company|firm|business|organisation|revenue|records|portfolio|"
+    r"retention|policy|premium)\b",
+    re.I,
+)
+
+
+def _looks_like_generic_stat(text: str) -> bool:
+    """True when the request asks for a generic statistic AND gives no context
+    about a specific client the agent could model instead.
+
+    Pattern #4 (the `(what|how much)...loss/cost/premium/rate` catch-all) is
+    meant for "what is the average ransom in Canada" -- a figure the model
+    does not hold.  It must NOT swallow "assess MY company and what is the
+    expected annual loss", which is the agent's core job.
+    """
+    generic_ask = re.search(
+        r"(what|how much|how many|quote|figure|number|stat)\b.*\b(paid?|cost|loss|premium|rate)\b",
+        text,
+        re.I,
+    )
+    if not generic_ask:
+        return False
+    return not _CLIENT_CONTEXT.search(text)
 
 
 def guard_statistics_request(text: str) -> SafetyVerdict | None:
     """Intercept requests for statistics we don't have."""
-    if any(p.search(text) for p in _NONEXISTENT_PATTERNS):
+    if any(p.search(text) for p in _NONEXISTENT_PATTERNS) or _looks_like_generic_stat(text):
         return SafetyVerdict(
             class_name="nonexistent_stat",
             flagged=True,
