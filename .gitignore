@@ -207,6 +207,21 @@ desktop.ini
 .notes.md
 
 # ----------------------------------------------------------------------
+# Developer / agent tooling config — machine-specific, never public.
+# .claude/ and .agents/ hold local AI-assistant skills (often symlinks
+# into a virtualenv) that break on other machines and leak the developer
+# environment; keep them out of the repo.
+# ----------------------------------------------------------------------
+.claude/
+.agents/
+.ai/
+
+# ----------------------------------------------------------------------
+# Empty scratch dirs kept for local use only (no source of truth here)
+# ----------------------------------------------------------------------
+/notebooks/
+
+# ----------------------------------------------------------------------
 # Ruff / lint caches
 # ----------------------------------------------------------------------
 .ruff_cache/
