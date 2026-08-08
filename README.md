@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# CyberRisk AI
+# CyberRisk AI (Not an expert at this, open to any feedback!)
 
 > **An AI-powered cyber risk advisory platform combining cyber threat intelligence, Monte Carlo loss modelling, and insurance analytics.**
 
