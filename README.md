@@ -6,6 +6,9 @@
 
 [Python ≥ 3.10](https://www.python.org) · [MIT License](#license--data-policy) · [Security](SECURITY.md)
 
+<!-- Landing page screenshot placeholder — see docs/images/README.md -->
+![CyberRisk AI landing page](docs/images/landing.png)
+
 </div>
 
 ---
@@ -48,6 +51,9 @@ It is built for:
 ---
 
 ## Architecture
+
+<!-- Architecture diagram placeholder — see docs/images/README.md -->
+![CyberRisk AI architecture](docs/images/architecture.png)
 
 ```
 User Input
@@ -388,6 +394,9 @@ result = assess_company_risk(CompanyBrief(
 ## Example Cyber Risk Assessment
 
 Here is a **live engine run** on a representative healthcare technology company (200,000 simulated years):
+
+<!-- Risk assessment output screenshot placeholder — see docs/images/README.md -->
+![CyberRisk AI risk assessment output](docs/images/risk-assessment-output.png)
 
 **Client profile — "MedData Health Technologies"**
 
