@@ -1,42 +1,208 @@
-# --- Python ---
+# ======================================================================
+# CyberRisk AI — .gitignore
+#
+# Policy: commit SOURCE, DOCS, EXAMPLE configs and TESTS.
+#         never commit secrets, licensed/proprietary datasets, local
+#         databases/vector stores, embeddings, caches, or generated
+#         reports/outputs (all rebuildable via pipelines).
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# Secrets & API keys
+# ----------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.secret
+*.token
+*.credentials
+.aws/credentials
+google-credentials*.json
+service-account*.json
+
+# ----------------------------------------------------------------------
+# Python — caches & bytecode
+# ----------------------------------------------------------------------
 __pycache__/
 *.py[cod]
-*.egg-info/
-build/
-dist/
-.eggs/
-
-# --- Virtual environment ---
-.venv/
-venv/
-
-# --- Secrets / local config ---
-.env
-
-# --- Test / tool caches ---
+*$py.class
+*.so
+.Python
+.python-version
+.hypothesis/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.ipynb_checkpoints/
+.pyre/
+.pytype/
+/build/
+/develop-eggs/
+/dist/
+/downloads/
+/eggs/
+/.eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+/MANIFEST
 
-# --- Generated output artifacts (regenerable reports/workbooks) ---
-data/output/
+# ----------------------------------------------------------------------
+# Virtual environments / dependency installs
+# ----------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+.python/
+pip-delete-this-directory.txt
 
-# --- Editor / OS ---
-.vscode/
-.idea/
-*.swp
-Thumbs.db
+# ----------------------------------------------------------------------
+# Node / frontend (web/frontend) — already covered by web/frontend/.gitignore,
+# kept here as a belt-and-suspenders guard at the repo root.
+# ----------------------------------------------------------------------
+node_modules/
+web/frontend/node_modules/
+web/frontend/dist/
+*.tsbuildinfo
+.vite/
+.eslintcache
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# --- Knowledge layer: generated artifacts (rebuildable from corpus + manifests) ---
+# ----------------------------------------------------------------------
+# Local databases & vector stores — never commit
+# ----------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.sqlitedb
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+*.faiss
 knowledge/derived/
+vector_db/
+vectordb/
+*.chroma
+chroma/
+*.lance
+*.milvus
+*.qdrant
+*.weaviate
 
-# --- Knowledge layer: licensed / proprietary / client-confidential source files ---
-# Manifest entries are committed; the underlying data files must never be.
-# Uncomment the tier folders you will actually hold so git tracks the rule explicitly.
+# ----------------------------------------------------------------------
+# Embeddings & ML artifacts — large, regenerable, may embed sensitive data
+# ----------------------------------------------------------------------
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.joblib
+*.parquet
+*.arrow
+*.feather
+embeddings/
+*.embedding
+*.vec
+*.bin
+
+# ----------------------------------------------------------------------
+# Model weights — large binaries; regenerate or re-source rather than commit
+# ----------------------------------------------------------------------
+*.onnx
+*.h5
+*.hdf5
+*.pb
+*.tflite
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# ----------------------------------------------------------------------
+# Generated reports & outputs — rebuildable, confidential by default
+# ----------------------------------------------------------------------
+data/output/
+data/raw/
+data/processed/
+reports/
+*.xlsx
+*.xls
+*.docx
+*.pptx
+*.csv.gz
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# ----------------------------------------------------------------------
+# Confidential & licensed cyber datasets — NEVER commit the raw files.
+# Keep manifests & .gitkeep files; the underlying data must be re-sourced.
+# Exception: knowledge/datasets/benchmarks/*/*.csv are intentional example
+# data (derived/curated) and ARE committed on purpose.
+# ----------------------------------------------------------------------
 knowledge/corpus/insurance/pricing/*
 knowledge/datasets/market/*
 knowledge/datasets/history/*
 knowledge/corpus/incidents/imported/*
 knowledge/corpus/industry-reports/ibm-codb/*
 !knowledge/**/.gitkeep
+
+# ----------------------------------------------------------------------
+# Logs & transient files
+# ----------------------------------------------------------------------
+logs/
+*.log
+logs/*.log
+*.pid
+*.seed
+*.pid.lock
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+*.swo
+.Trash-*
+
+# ----------------------------------------------------------------------
+# Jupyter
+# ----------------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ----------------------------------------------------------------------
+# IDEs, editors & OS cruft
+# ----------------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+*.orig
+.notes.md
+
+# ----------------------------------------------------------------------
+# Ruff / lint caches
+# ----------------------------------------------------------------------
+.ruff_cache/
