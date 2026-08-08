@@ -19,6 +19,9 @@ venv/
 .ruff_cache/
 .ipynb_checkpoints/
 
+# --- Generated output artifacts (regenerable reports/workbooks) ---
+data/output/
+
 # --- Editor / OS ---
 .vscode/
 .idea/

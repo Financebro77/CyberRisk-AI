@@ -20,6 +20,8 @@ dependencies = [
 test = ["pytest>=7.0"]
 reporting = ["openpyxl>=3.0", "xlsxwriter>=3.0"]
 agent = ["openai>=1.0", "python-dotenv>=1.0", "streamlit>=1.30"]
+web = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+knowledge = ["pypdf>=4.0", "python-docx>=1.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
