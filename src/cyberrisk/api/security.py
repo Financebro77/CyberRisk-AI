@@ -22,7 +22,7 @@ import time
 from collections import defaultdict, deque
 from typing import Callable
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 
 ENV_API_KEY = "CYBERRISK_API_KEY"
 ENV_RATE_LIMIT = "CYBERRISK_RATE_LIMIT"
@@ -80,15 +80,6 @@ def _rate_limit_per_minute() -> int:
         return max(0, int(raw))
     except ValueError:
         return 0
-
-
-def _client_identity(request: Request, api_identity: str | None) -> str:
-    """A stable identity for rate limiting: the API key when authenticated,
-    otherwise the client IP."""
-    if api_identity:
-        return api_identity
-    client = request.client
-    return client.host if client and client.host else "unknown"
 
 
 def _check_rate_limit(identity: str, limit: int) -> None:
@@ -184,18 +175,3 @@ def _json_response(content: dict, status_code: int):
     from starlette.responses import JSONResponse
 
     return JSONResponse(content, status_code=status_code)
-
-
-# Re-export the parsed-request variant for tests that use TestClient directly.
-def security_dependency(request: Request) -> None:
-    """FastAPI dependency that enforces auth + rate limit on a route.
-
-    Kept for parity/tests; the middleware is the primary enforcement path.
-    """
-    authorization = request.headers.get("authorization")
-    identity = verify_api_key(authorization)
-    if _api_key_is_configured() and identity is None:
-        raise HTTPException(status_code=401, detail="Unauthorized. Provide a valid API key.")
-    limit = _rate_limit_per_minute()
-    if limit > 0:
-        _check_rate_limit(_client_identity(request, identity), limit)
