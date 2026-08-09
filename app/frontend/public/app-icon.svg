@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Deep quantitative field (navy -> indigo) -->
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1739"/>
+      <stop offset="0.55" stop-color="#101c4d"/>
+      <stop offset="1" stop-color="#1a0b3a"/>
+    </linearGradient>
+    <!-- Shield body (electric violet) -->
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#6d28d9"/>
+    </linearGradient>
+    <!-- Bolt glow (cyan) -->
+    <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a5f3fc"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <!-- Radar sweep (soft cyan, fades out) -->
+    <radialGradient id="sweep" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.62" stop-color="#38bdf8" stop-opacity="0"/>
+      <stop offset="0.85" stop-color="#7dd3fc" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Outer glow for the shield -->
+    <filter id="shieldGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="34" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="boltGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="rounded">
+      <rect x="64" y="64" width="896" height="896" rx="200"/>
+    </clipPath>
+  </defs>
+
+  <!-- Rounded-square canvas (iOS-style, safe-area padding for the squash mask) -->
+  <rect x="0" y="0" width="1024" height="1024" fill="#0b1739"/>
+  <g clip-path="url(#rounded)">
+    <rect x="64" y="64" width="896" height="896" fill="url(#field)"/>
+
+    <!-- Faint cyber "grid" (quantitative feel) -->
+    <g stroke="#7dd3fc" stroke-opacity="0.10" stroke-width="4">
+      <path d="M64 288 H960 M64 512 H960 M64 736 H960"/>
+      <path d="M288 64 V960 M512 64 V960 M736 64 V960"/>
+    </g>
+
+    <!-- Radar sweep ring + ticks -->
+    <g fill="none" stroke="#38bdf8" stroke-opacity="0.5">
+      <circle cx="512" cy="512" r="300" stroke-width="3" stroke-dasharray="6 14"/>
+    </g>
+    <g stroke="#7dd3fc" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round">
+      <path d="M512 170 v-28"/>
+      <path d="M682 342 l20 -20"/>
+      <path d="M854 512 h28"/>
+    </g>
+    <circle cx="512" cy="512" r="300" fill="url(#sweep)"/>
+
+    <!-- Shield -->
+    <g filter="url(#shieldGlow)">
+      <path d="M512 268
+               C 556 268 648 296 680 316
+               L 512 384
+               L 344 316
+               C 376 296 468 268 512 268 Z"
+            fill="url(#shield)" stroke="#c4b5fd" stroke-width="10"/>
+      <path d="M344 316
+               L 512 384
+               L 512 742
+               C 470 728 410 668 404 610
+               C 400 560 398 404 398 348
+               L 344 316 Z"
+            fill="#a78bfa" opacity="0.55"/>
+    </g>
+
+    <!-- Lightning bolt (the brand mark, simplified) -->
+    <g filter="url(#boltGlow)">
+      <path d="M536 388
+               L 430 536
+               L 506 536
+               L 472 664
+               L 586 506
+               L 508 506 Z"
+            fill="url(#bolt)" stroke="#e0f2fe" stroke-width="12" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

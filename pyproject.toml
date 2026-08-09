@@ -34,7 +34,7 @@ test = [
     "pyarrow>=14.0",
 ]
 reporting = ["openpyxl>=3.0", "xlsxwriter>=3.0"]
-agent = ["openai>=1.0", "python-dotenv>=1.0", "streamlit>=1.30"]
+agent = ["openai>=1.0", "python-dotenv>=1.0", "streamlit>=1.30", "requests>=2.28"]
 # httpx2 is required by starlette.testclient (fastapi's TestClient) in
 # current fastapi/starlette releases.  The `web` extra carries it for the
 # web layer; the `test` extra repeats it so the API test-suite

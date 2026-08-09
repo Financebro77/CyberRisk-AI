@@ -16,7 +16,8 @@
 #   2. Risk calculation engine — Monte Carlo simulation, scoring, metrics
 #   3. RAG knowledge retrieval — SQLite vector store + offline HashEmbedder
 #   4. Web application       — built React SPA served by the same process
-#   5. Environment variables — injected from .env at runtime
+#   5. Versioned mobile API  — /api/v1/* (assessment lifecycle) for mobile clients
+#   6. Environment variables — injected from .env at runtime
 # =====================================================================
 
 services:

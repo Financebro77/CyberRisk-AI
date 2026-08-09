@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+
+// Resolve an absolute path for the multi-page HTML inputs (ESM-safe, works
+// on Node 20 in the Docker build too — __dirname is not available in ESM).
+const dir = fileURLToPath(new URL('.', import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,6 +14,17 @@ export default defineConfig({
   // is correct for a domain or subdomain deployment.
   base: '/',
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      input: {
+        // The existing web SPA entry.
+        main: `${dir}index.html`,
+        // The single-screen, voice-first consultant PWA entry.  Purely
+        // additive — the web app is unchanged.
+        voice: `${dir}voice.html`,
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

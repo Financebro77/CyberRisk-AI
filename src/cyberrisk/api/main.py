@@ -23,6 +23,9 @@ from fastapi.staticfiles import StaticFiles
 from cyberrisk import __version__
 from cyberrisk.api.chat import router as chat_router
 from cyberrisk.api.routes import router
+from cyberrisk.api.v1 import router as v1_router
+from cyberrisk.api.v1.errors import register_v1_error_handlers
+from cyberrisk.api.v1.middleware import RequestContextMiddleware
 
 # Repo root: src/cyberrisk/api/main.py -> src/cyberrisk -> src -> repo root.
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -43,17 +46,26 @@ app = FastAPI(
     version=__version__,
 )
 
-# CORS: allow the Vite dev server (localhost:5173) during development and the
-# production origin.  In production the frontend is served same-origin by this
-# app, so no extra origin is needed there.  A production deployment should
-# configure the real deployment origin explicitly rather than leaving the
-# localhost allow-list in place.
+# CORS: allow the Vite dev server (localhost:5173), the mobile Streamlit
+# client (localhost:8501) during development, and any production origins in
+# CYBERRISK_CORS_ORIGINS (comma-separated).  In production the web frontend is
+# served same-origin by this app, so no extra origin is needed there; a
+# production deployment should configure the real deployment origins explicitly
+# rather than leaving the localhost allow-list in place.
+import os as _os
+
+_cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8501",
+    "http://127.0.0.1:8501",
+]
+_extra = _os.getenv("CYBERRISK_CORS_ORIGINS", "")
+if _extra.strip():
+    _cors_origins.extend(o.strip() for o in _extra.split(",") if o.strip())
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,6 +80,15 @@ app.add_middleware(APIGatewayMiddleware)
 
 app.include_router(router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(v1_router, prefix="/api/v1")
+
+# Request-context middleware: assign + echo X-Request-ID and log one line per
+# request.  Registered last so it is the OUTERMOST middleware -- the id header
+# is present even on the gateway's raw 401/429 responses.
+app.add_middleware(RequestContextMiddleware)
+
+# Versioned-API error envelope (validation / HTTP / unhandled).
+register_v1_error_handlers(app)
 
 
 @app.get("/", response_model=None)
@@ -82,20 +103,12 @@ def index() -> FileResponse | dict:
     }
 
 
-# Serve built static assets (and the SPA fallback for client-side routes).
+# Serve built static assets.  The SPA fallback for unknown client-side routes
+# is handled by the path-aware error handlers in api/v1/errors.py (unchanged
+# behaviour for non-/api paths).
 if (FRONTEND_DIST / "index.html").exists():
     app.mount(
         "/assets",
         StaticFiles(directory=FRONTEND_DIST / "assets"),
         name="assets",
     )
-
-    @app.exception_handler(404)
-    async def _spa_fallback(request, _exc) -> FileResponse:
-        # Any unknown non-/api path serves the SPA shell; the client router
-        # takes over from there.  API 404s stay JSON (raised by the router).
-        from fastapi.responses import JSONResponse
-
-        if request.url.path.startswith("/api"):
-            return JSONResponse(status_code=404, content={"detail": "Not Found"})
-        return FileResponse(FRONTEND_DIST / "index.html")

@@ -132,7 +132,7 @@ class APIGatewayMiddleware:
             await self.app(scope, receive, send)
             return
         # Health is exempt so load balancers / the Docker healthcheck work.
-        if path == "/api/health":
+        if path in ("/api/health", "/api/v1/health"):
             await self.app(scope, receive, send)
             return
 

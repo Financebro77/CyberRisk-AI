@@ -37,6 +37,7 @@ It is built for:
 - **RAG knowledge retrieval** — a semantic search over a curated corpus (regulatory frameworks, standards, industry reports, incident data) that grounds every recommendation in citable, source-tagged chunks.
 - **Provider-agnostic LLM layer** — run the same agent on **OpenAI** or **DeepSeek** by setting `LLM_PROVIDER`; a pluggable `src/cyberrisk/llm/` interface.
 - **Privacy by design** — an input guard detects and redacts personal data before it reaches the model, and sanitised logging ensures no secret or PII is written to logs.
+- **Versioned mobile API** — a clean `/api/v1/*` JSON API for mobile clients: a multi-step assessment lifecycle (start → submit → results) reusing the same engine, agent, and RAG read-only, with typed schemas, request IDs, structured logging, and opt-in auth / rate limiting.
 
 ---
 
@@ -93,6 +94,24 @@ User
 ```
 
 The agent is **purely additive** — the quantitative engine is consumed read-only through the tool layer and is never modified.
+
+### Versioned mobile API tier
+
+```
+Mobile client (iOS / Android / any HTTP client)
+  → Versioned API (POST /api/v1/assessment/start | submit | GET .../results)
+    → Existing tools (assess_company_risk → run_loss_simulation
+                      → analyse_insurance_structure → scenario contribution)
+      → Existing engine (scoring, Monte Carlo, metrics, policy transform)
+      → Existing RAG + incident index (evidence / citations)
+```
+
+The mobile API never computes risk itself — it runs the existing tool layer
+read-only and returns the engine's JSON. `/api/v1/assessment/submit` returns
+the full result in one round-trip; `/api/v1/assessment/{id}/results` replays it
+for a given assessment id. Every response carries an `X-Request-ID`; errors use
+a consistent `{"error": {code, message, request_id}}` envelope. See
+`docs/api.md` for the endpoint reference.
 
 ---
 
@@ -340,6 +359,23 @@ The container runs as a non-root user and health-checks `/api/health`.
 Check status with `docker compose ps`, follow logs with `docker compose logs
 -f`, and stop with `docker compose down` (add `-v` to also drop named
 volumes).
+
+### Versioned mobile API
+
+The `/api/v1/*` routes are served by the same `cyberrisk` process — no extra
+container. A mobile client runs an assessment in one round-trip:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/assessment/submit \
+  -H "Content-Type: application/json" \
+  -d '{"firm_name":"Acme","industry":"Healthcare","revenue_usd":400000000,
+       "customer_records":10000000,"technology_dependency":"High",
+       "security_controls":"MFA partial, weekly backups, weak segmentation"}'
+```
+
+The response carries `assessment_id`, `status`, and the full `result`
+(risk score, EAL, VaR/ES, PML, insurance analysis, mitigation
+recommendations, model limitations, evidence/citations). See `docs/api.md`.
 
 ### Configuration & secrets
 
