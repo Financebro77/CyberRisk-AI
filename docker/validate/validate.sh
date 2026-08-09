@@ -108,7 +108,11 @@ fi
 # ----------------------------------------------------------------------
 echo
 echo "== [3/7] API health check =="
-API_HOST="$(docker port "$CTN" 18000 2>/dev/null | sed 's/0.0.0.0/127.0.0.1/')"
+# Published host port for the container's 8000.  `docker port` may emit
+# `0.0.0.0:18000`, `127.0.0.1:18000`, or `::1:18000`; normalise to a
+# curl-usable host:port on the loopback.
+API_HOST="$(docker port "$CTN" 18000 2>/dev/null | head -1 | sed -E 's/^.*:([0-9]+)$/127.0.0.1:\1/')"
+[ -n "$API_HOST" ] || API_HOST="127.0.0.1:18000"
 api_ok=0
 for _ in $(seq 1 20); do
     body="$(curl -fsS "http://${API_HOST}/api/health" 2>/dev/null)" && { api_ok=1; break; }
