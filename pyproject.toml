@@ -17,10 +17,29 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0", "ruff>=0.6"]
+test = [
+    "pytest>=7.0",
+    "ruff>=0.6",
+    # The API test-suite (tests/test_api_security.py) builds a TestClient,
+    # which needs fastapi + httpx2 (starlette.testclient dependency).
+    "fastapi>=0.110",
+    "httpx2>=2.0",
+    # LLM/agent tests (test_llm_*, test_agent_*) build providers that import
+    # the openai SDK.  Mirror the `agent` extra so `pip install -e ".[test]"`
+    # alone runs the full suite.
+    "openai>=1.0",
+    "python-dotenv>=1.0",
+    # test_dataset_loaders.py exercises parquet round-trips (pandas needs
+    # pyarrow or fastparquet as its engine).
+    "pyarrow>=14.0",
+]
 reporting = ["openpyxl>=3.0", "xlsxwriter>=3.0"]
 agent = ["openai>=1.0", "python-dotenv>=1.0", "streamlit>=1.30"]
-web = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+# httpx2 is required by starlette.testclient (fastapi's TestClient) in
+# current fastapi/starlette releases.  The `web` extra carries it for the
+# web layer; the `test` extra repeats it so the API test-suite
+# (tests/test_api_security.py) can build a TestClient with `.[test]` alone.
+web = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "httpx2>=2.0"]
 knowledge = ["pypdf>=4.0", "python-docx>=1.0"]
 
 [project.scripts]

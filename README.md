@@ -397,11 +397,19 @@ python -m uvicorn cyberrisk.api.main:app --port 8000 --reload
 
 # Terminal 2 — Vite dev server on :5173 (proxies /api → :8000)
 cd app/frontend
-npm install
+npm ci        # exact install from the committed package-lock.json
 npm run dev
 ```
 
 Open <http://localhost:5173>. The Vite dev server proxies `/api` calls to the backend (`app/frontend/vite.config.ts`), so both must be running.
+
+> **Frontend dependencies:** `app/frontend/package-lock.json` is committed and
+> locks against the default npm registry (`registry.npmjs.org`) so installs are
+> reproducible on any machine and in CI. The project `.npmrc` intentionally
+> does **not** pin a mirror — a mirror that is unreachable in CI would break
+> `npm ci` inside the Docker image. Developers behind slow links may override
+> the registry per-machine (`npm config set registry ...`); do not commit that
+> override.
 
 ### Python API usage
 

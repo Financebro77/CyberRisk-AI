@@ -64,7 +64,9 @@ share/python-wheels/
 # Virtual environments / dependency installs
 # ----------------------------------------------------------------------
 .venv/
+.venv*/
 venv/
+venv*/
 env/
 ENV/
 env.bak/

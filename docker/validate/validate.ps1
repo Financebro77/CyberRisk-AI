@@ -38,8 +38,14 @@ function Pass([string]$msg) { $script:Pass++; Write-Host "  [PASS] $msg" }
 function Fail([string]$msg) { $script:Fail++; Write-Host "  [FAIL] $msg" }
 
 function Cleanup {
-    & docker rm -f $Ctn 2>$null | Out-Null
-    & docker network rm $Net 2>$null | Out-Null
+    # Removing a non-existent container/network is normal on first run; the
+    # error must not trip the trap (which would exit before the build starts).
+    try {
+        & docker rm -f $Ctn 2>$null | Out-Null
+    } catch { }
+    try {
+        & docker network rm $Net 2>$null | Out-Null
+    } catch { }
 }
 trap { Cleanup; exit 1 }
 Cleanup
@@ -48,7 +54,13 @@ Cleanup
 # 1. Image builds
 # ----------------------------------------------------------------------
 Write-Host "== [1/7] Building image $Image =="
-$skipBuild = $NoBuild -and (& docker image inspect $Image 2>$null | Out-Null; $LASTEXITCODE -eq 0)
+$skipBuild = $false
+if ($NoBuild) {
+    # Reuse an existing image when requested and one is present.  Check with
+    # docker image inspect, swallowing its exit code (0 = image exists).
+    & docker image inspect $Image 2>$null | Out-Null
+    $skipBuild = ($LASTEXITCODE -eq 0)
+}
 if ($skipBuild) {
     Pass "image already exists (-NoBuild)"
 } else {

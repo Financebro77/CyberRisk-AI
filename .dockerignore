@@ -54,6 +54,11 @@ app/frontend/dist/
 # Second lockfile for a package manager we don't use in the image (npm ci
 # is the single source of truth; keep only package-lock.json).
 app/frontend/pnpm-lock.yaml
+# Machine-specific npm config must never enter the image: it may pin a
+# registry mirror (e.g. a China-mainland mirror) that is unreachable in CI
+# or on GitHub-hosted runners, breaking `npm ci`.  The image always uses
+# the default npm registry, so the lockfile (registry.npmjs.org) is honored.
+app/frontend/.npmrc
 
 # Local databases, vector stores, generated outputs (regenerable)
 *.db

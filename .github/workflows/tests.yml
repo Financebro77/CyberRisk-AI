@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # `test` extra is self-contained (pytest + ruff + the deps the API
+          # tests and LLM/agent tests need); reporting/knowledge/web are the
+          # package extras the suite also exercises.
           pip install -e ".[test,reporting,knowledge,web]"
 
       - name: Lint check (ruff)
@@ -65,7 +68,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build the image
-        run: docker build -t cyberrisk:ci .
+        run: |
+          # Always log the tail of the build output when it fails so the
+          # failing stage is visible in the job log without re-running.
+          if ! docker build -t cyberrisk:ci . 2>&1 | tee /tmp/cyberrisk-build.log; then
+            echo "::error::docker build failed — last 40 lines:"
+            tail -40 /tmp/cyberrisk-build.log
+            exit 1
+          fi
 
       - name: Boot the container (no LLM key needed — engine is offline)
         run: |
@@ -73,10 +83,18 @@ jobs:
             -e LLM_PROVIDER=deepseek \
             cyberrisk:ci
           # Wait for the API to come up (healthcheck also guards this).
+          # If it never comes up, dump the container logs for debugging.
+          ok=0
           for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:8000/api/health >/dev/null 2>&1; then break; fi
+            if curl -sf http://127.0.0.1:8000/api/health >/dev/null 2>&1; then ok=1; break; fi
             sleep 2
           done
+          if [ "$ok" != "1" ]; then
+            echo "::error::container never became reachable — docker logs:"
+            docker logs cyberrisk-ci 2>&1 | tail -60
+            docker inspect -f 'status={{.State.Status}} health={{.State.Health.Status}}' cyberrisk-ci || true
+            exit 1
+          fi
 
       - name: Verify API health
         run: |
@@ -88,17 +106,24 @@ jobs:
           # The container serves the built SPA; without a built dist the API
           # still returns the "not built" JSON — so assert the UI shell loads.
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/)
-          test "$code" = "200"
+          if [ "$code" != "200" ]; then
+            echo "::error::frontend route / returned HTTP $code"
+            curl -s http://127.0.0.1:8000/ | head -c 500
+            exit 1
+          fi
           echo "Frontend route / -> HTTP $code"
 
       - name: Verify API docs are served
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/docs)
-          test "$code" = "200"
+          if [ "$code" != "200" ]; then
+            echo "::error::API docs /docs returned HTTP $code"
+            exit 1
+          fi
           echo "API docs /docs -> HTTP $code"
 
       - name: Tear down
-        run: docker rm -f cyberrisk-ci
+        run: docker rm -f cyberrisk-ci || true
 
   docker-validate:
     name: Docker validation (agent, engine, RAG, env)
@@ -109,7 +134,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build the image
-        run: docker build -t cyberrisk:latest .
+        run: |
+          if ! docker build -t cyberrisk:latest . 2>&1 | tee /tmp/cyberrisk-build.log; then
+            echo "::error::docker build failed — last 40 lines:"
+            tail -40 /tmp/cyberrisk-build.log
+            exit 1
+          fi
 
       - name: Run the deployment validation suite
         run: |
