@@ -276,34 +276,118 @@ python -m uvicorn cyberrisk.api.main:app --port 8000
 
 Open <http://localhost:8000> — the UI is served from `app/frontend/dist`, and interactive API docs live at <http://localhost:8000/docs>.
 
-### Docker deployment
+## Docker Installation
 
-The repo ships a `Dockerfile` and `docker-compose.yml` for a single-container
-deployment that serves **both** the API and the built frontend.
+The repo ships a `Dockerfile`, `docker-compose.yml`, and `.dockerignore` for a
+single-container deployment that serves **everything** from one process on
+port `8000`:
+
+1. **AI agent backend** — the FastAPI `/api/*` routes plus the tool-calling
+   consultant agent (`cyberrisk.agent`).
+2. **Risk calculation engine** — Monte Carlo simulation, risk scoring, and
+   metrics, running fully inside the container.
+3. **RAG knowledge retrieval** — the SQLite vector store
+   (`knowledge/derived/vector.db`) and the offline `HashEmbedder` — no
+   external vector database is required.
+4. **Web application** — the built React SPA is served statically by the same
+   uvicorn process.
+5. **Environment variable configuration** — all settings and secrets are
+   injected at runtime from `.env`; nothing is hard-coded or baked in.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) with the Compose plugin
+  (`docker compose version`). Docker Desktop on Windows/macOS includes it.
+- A copy of `.env` configured with your LLM provider (see
+  [Environment configuration](#environment-configuration)).
+
+### Build the image
 
 ```bash
-# 1. Configure your LLM provider
+# From the repository root
+docker build -t cyberrisk:latest .
+```
+
+The image is built in three stages:
+
+| Stage | Base | Builds |
+|---|---|---|
+| `backend` | `python:3.12-slim` | The `cyberrisk` package (engine + agent + API) with system deps for PDF/DOCX parsing (`poppler-utils`) |
+| `frontend` | `node:20-alpine` | The React SPA (`npm ci && npm run build`) |
+| `runtime` | `backend` | The final image: backend + built SPA, non-root user, healthcheck |
+
+No secrets are needed to build the image — API keys are only ever injected at
+runtime.
+
+### Start the application
+
+```bash
+# 1. Configure your LLM provider (once)
 cp .env.example .env        # set LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
 
-# 2. Build and start
+# 2. Build (if needed) and start
 docker compose up --build
 ```
 
-Open <http://localhost:8000> (UI + API) and <http://localhost:8000/docs>
-(API docs).
+### Access the application
 
-**How it works:**
+| URL | What you get |
+|---|---|
+| <http://localhost:8000> | The web application (React UI + API, same origin) |
+| <http://localhost:8000/docs> | Interactive API documentation (Swagger UI) |
 
-- The **backend** stage installs the Python package (`.[web,reporting,knowledge]`).
-- The **frontend** stage builds the React SPA with `npm run build`.
-- The **runtime** stage serves both from a single uvicorn process, as a
-  non-root user, with a healthcheck on `/api/health`.
-- **Secrets** are injected only from `.env` via `env_file` (gitignored,
-  never baked into the image). `.dockerignore` excludes `.env`, `.venv`,
-  `node_modules`, and other artifacts from the build context.
+The container runs as a non-root user and health-checks `/api/health`.
+Check status with `docker compose ps`, follow logs with `docker compose logs
+-f`, and stop with `docker compose down` (add `-v` to also drop named
+volumes).
 
-See [Deployment](docs/deployment.md) for full details, the cloud roadmap,
-and troubleshooting.
+### Configuration & secrets
+
+- Copy `.env.example` to `.env` and set your provider and key. `.env` is
+  **gitignored and `.dockerignore`d** — it is never copied into the image and
+  is injected only via `env_file` at runtime.
+- Supported variables are listed in the
+  [provider table above](#switching-llm-providers); optional API hardening
+  (`CYBERRISK_API_KEY`, `CYBERRISK_RATE_LIMIT`) is documented in
+  [docs/api.md §4](docs/api.md).
+- The engine runs fully offline. Only the AI consultant layer needs an LLM
+  API key.
+
+### Volumes
+
+`docker-compose.yml` bind-mounts these host paths into the container:
+
+| Host path | Container path | Mode |
+|---|---|---|
+| `knowledge/corpus` | `/app/knowledge/corpus` | read-only |
+| `knowledge/manifests` | `/app/knowledge/manifests` | read-only |
+| `knowledge/derived` | `/app/knowledge/derived` | read-only (vector index) |
+| `data/output` | `/app/data/output` | read-write (generated reports) |
+
+Re-running `python -m cyberrisk.knowledge.update` on the host refreshes the
+vector index in `knowledge/derived/vector.db`, which the container picks up on
+restart — no image rebuild needed.
+
+### Validate the Docker deployment
+
+A self-contained validation suite checks that the image builds, the container
+starts, the API responds, the agent loads, the engine runs, RAG retrieval
+works, and env vars load correctly:
+
+```powershell
+# Windows (PowerShell)
+.\docker\validate\validate.ps1
+
+# macOS / Linux
+bash docker/validate/validate.sh
+```
+
+Each check prints `[PASS]`/`[FAIL]`; the runner exits nonzero on failure so it
+drops straight into CI. See [Deployment §2.4](docs/deployment.md#24-validating-the-deployment)
+for details and example output.
+
+See [Deployment](docs/deployment.md) for the full architecture, the cloud
+roadmap, and troubleshooting.
 
 ### Development mode (live-reloading)
 

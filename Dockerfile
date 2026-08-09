@@ -11,15 +11,26 @@
 #   → http://localhost:8000        (UI + API)
 #   → http://localhost:8000/docs   (API docs)
 #
-# Secrets: injected at runtime via env_file / environment (see
-# docker-compose.yml).  NEVER baked into the image.
+# What runs in this container:
+#   1. AI agent backend  — the tool-calling consultant (cyberrisk.agent)
+#   2. Risk engine       — Monte Carlo simulation + scoring (cyberrisk.*)
+#   3. RAG retrieval     — SQLite vector store (knowledge/derived) + HashEmbedder
+#   4. Web app           — React SPA served statically by the same process
+#   5. Env configuration — read at runtime from the environment / .env
+#
+# Secrets (API keys) are injected at runtime via env_file / environment
+# (see docker-compose.yml).  NEVER baked into the image.
 # =====================================================================
 
 # ---- Stage 1: backend -------------------------------------------------
 FROM python:3.12-slim AS backend
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    # `src/` must be on the path: the runtime imports `agent.safety` from
+    # the legacy top-level `src/agent/` package (src/ is also the wheel
+    # location for the `cyberrisk` package).
+    PYTHONPATH=/app/src
 
 WORKDIR /app
 
@@ -30,14 +41,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the package first (caches dependencies across rebuilds).
+# `agent` extra carries the OpenAI SDK + python-dotenv used by the API's
+# chat routes; `knowledge` the PDF/DOCX parsers; `reporting` the Excel
+# writers.  A plain (non-editable) wheel install keeps the image decoupled
+# from the source tree.
 COPY pyproject.toml ./
 COPY src ./src
-RUN pip install --no-cache-dir -e ".[web,reporting,knowledge]"
+RUN pip install --no-cache-dir ".[web,reporting,knowledge,agent]"
+
+# Runtime configuration: the engine resolves its calibration at
+# <repo>/config/ (scenarios.yaml, simulation_config.yaml, scoring_weights.yaml,
+# ...).  This is shipped into the image so the engine runs offline and the
+# container is self-contained.
+COPY config ./config
 
 # ---- Stage 2: frontend (React SPA) ------------------------------------
 FROM node:20-alpine AS frontend
 WORKDIR /build
 
+# package-lock.json is the single source of truth (npm ci is strict); the
+# pnpm-lock.yaml in the tree is NOT used — kept out via .dockerignore.
 COPY app/frontend/package.json app/frontend/package-lock.json ./
 RUN npm ci
 
@@ -52,6 +75,8 @@ COPY --from=frontend /build/dist /app/app/frontend/dist
 
 # Knowledge corpus + manifests are mounted as volumes (read-only) by
 # docker-compose.yml; generated reports land in data/output (write).
+# The vector index (knowledge/derived) is baked at build time and may be
+# overridden by a read-only volume for live refreshes.
 
 # Run as an unprivileged user.
 RUN useradd --create-home --uid 10001 cyberrisk \

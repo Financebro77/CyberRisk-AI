@@ -1,5 +1,5 @@
 # =====================================================================
-# CyberRisk AI — local deployment
+# CyberRisk AI — containerised deployment
 #
 #   docker compose up --build
 #   → http://localhost:8000        (UI + API)
@@ -11,13 +11,12 @@
 #     never baked into the image).  Compose injects it via env_file.
 #   - All other settings use sensible defaults.
 #
-# Requirements:
-#   1. Backend API startup      — uvicorn serves /api/* and /docs
-#   2. Web application startup  — the built SPA is served by the same
-#                                 process (single image, both on :8000)
-#   3. Environment variables    — read from .env (LLM_PROVIDER, keys, ...)
-#   4. Secure secret handling   — .env only; no secrets in images/files
-#   5. Local deployment         — `docker compose up`
+# What the service contains (single image, one process on :8000):
+#   1. AI agent backend      — FastAPI /api/* routes + the consultant agent
+#   2. Risk calculation engine — Monte Carlo simulation, scoring, metrics
+#   3. RAG knowledge retrieval — SQLite vector store + offline HashEmbedder
+#   4. Web application       — built React SPA served by the same process
+#   5. Environment variables — injected from .env at runtime
 # =====================================================================
 
 services:
@@ -37,9 +36,20 @@ services:
                                    # optional API security: CYBERRISK_API_KEY,
                                    # CYBERRISK_RATE_LIMIT (see docs/api.md §4)
     volumes:
-      # Knowledge corpus + manifests (read-only) so ingested content persists.
+      # Knowledge corpus + manifests (read-only) so ingested content persists
+      # and updates on the host are visible without a rebuild.
       - ./knowledge/corpus:/app/knowledge/corpus:ro
       - ./knowledge/manifests:/app/knowledge/manifests:ro
+      # Vector index (read-only): bake a populated index into the image for
+      # a self-contained deploy, OR bind-mount a host-built index here to
+      # refresh retrieval without a rebuild.  Do not point both at once.
+      - ./knowledge/derived:/app/knowledge/derived:ro
       # Generated reports (write) — survive container restarts.
       - ./data/output:/app/data/output
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3

@@ -3,6 +3,9 @@
 #
 # Keeps the build context small and, critically, keeps SECRETS and
 # regenerable artifacts OUT of the Docker image build context.
+#
+# NOTE: this mirrors .gitignore.  If you ignore something here, also keep
+# it ignored in .gitignore so it can never enter the image OR the repo.
 # =====================================================================
 
 # Secrets — never ship into the build context or image.
@@ -22,6 +25,12 @@
 .git
 .gitignore
 .github
+.dockerignore
+
+# NOTE: config/ (engine calibration) and knowledge/corpus + knowledge/manifests
+# ARE needed at runtime — they are intentionally NOT excluded here so the image
+# is self-contained.  The corpus/manifests are additionally bind-mounted
+# read-only by docker-compose.yml so host edits are visible without a rebuild.
 
 # Python
 __pycache__/
@@ -33,23 +42,40 @@ venv/
 .mypy_cache/
 .ruff_cache/
 .python-version
+.pre-commit-config.yaml
+.tox/
+.coverage
+htmlcov/
 
 # Node / frontend build artifacts (regenerated in the image)
 node_modules/
 app/frontend/node_modules/
 app/frontend/dist/
+# Second lockfile for a package manager we don't use in the image (npm ci
+# is the single source of truth; keep only package-lock.json).
+app/frontend/pnpm-lock.yaml
 
 # Local databases, vector stores, generated outputs (regenerable)
 *.db
 *.sqlite
 *.sqlite3
+*.sqlitedb
 knowledge/derived/
 data/output/
+data/raw/
+data/private/
+data/client_data/
 reports/
 *.xlsx
 
-# OS / editor cruft
+# Stale pre-built frontend snapshot under web/ — not a build input (the
+# real source lives in app/frontend).  Keeping it out prevents confusion
+# and a bloated build context.
+web/
+
+# Editor / OS cruft
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+*.swp

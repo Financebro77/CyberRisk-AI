@@ -99,3 +99,18 @@ jobs:
 
       - name: Tear down
         run: docker rm -f cyberrisk-ci
+
+  docker-validate:
+    name: Docker validation (agent, engine, RAG, env)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t cyberrisk:latest .
+
+      - name: Run the deployment validation suite
+        run: |
+          bash docker/validate/validate.sh --no-build

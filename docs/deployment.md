@@ -105,34 +105,73 @@ FastAPI backend and the pre-built React frontend from a single image.
 
 Deployment is designed around five requirements:
 
-1. **Backend API startup** — uvicorn serves `/api/*` and `/docs`.
-2. **Web application startup** — the built SPA is served by the same
-   process on :8000.
-3. **Environment variable configuration** — read from `.env` via `env_file`.
-4. **Secure secret handling** — `.env` only; never baked into the image;
-   `.dockerignore` excludes secrets from the build context.
-5. **Local deployment** — a single `docker compose up --build`.
+1. **AI agent backend** — uvicorn serves `/api/*` (the consultant agent and
+   its tools) and `/docs`.
+2. **Risk calculation engine** — the engine (`cyberrisk.*`) runs in-process
+   inside the same container.
+3. **RAG knowledge retrieval** — the SQLite vector store
+   (`knowledge/derived/vector.db`) and offline `HashEmbedder` need **no
+   external vector database**; the corpus and index are provided via volumes.
+4. **Web application** — the built React SPA is served by the same process on
+   :8000.
+5. **Environment variable configuration** — read from `.env` via `env_file`,
+   never baked into the image.
 
-### 2.1 The shipped `Dockerfile`
+### 2.1 Docker architecture
 
-Three stages:
+The deployment is a **single image, single process**: one uvicorn worker
+serves both the FastAPI backend and the statically-served React SPA. This is
+the simplest topology that satisfies all five requirements; a multi-service
+split (separate API, worker, vector-store containers) is unnecessary because
+the engine and the SQLite vector store are embedded — see §3.2 for when to
+split.
 
-- **backend** — `python:3.12-slim` with the system deps for knowledge
-  parsing (`poppler-utils`), installs the package with
-  `.[web,reporting,knowledge]`.
-- **frontend** — `node:20-alpine` builds the React SPA (`app/frontend`).
-- **runtime** — the backend image plus the built SPA; runs as an
-  unprivileged user (`USER cyberrisk`) and health-checks `/api/health`.
+```
+                ┌────────────────────────────────────────────────────┐
+                │          cyberrisk:latest  (python:3.12-slim)      │
+                │                                                    │
+                │   uvicorn cyberrisk.api.main:app        :8000      │
+                │     ├── /api/*      FastAPI routers + agent tools  │
+                │     ├── /           React SPA (static, built)      │
+                │     ├── /assets     SPA assets (static)            │
+                │     └── /docs       Swagger UI                     │
+                │                                                    │
+                │   embedded: cyberrisk engine · RAG (SQLite + Hash) │
+                └────────────────────────────────────────────────────┘
+                        ▲ volumes                    ▲ .env (runtime)
+        ┌───────────────┴────────────────┐   ┌───────┴────────┐
+        │ knowledge/corpus   (ro)        │   │ LLM_PROVIDER   │
+        │ knowledge/manifests(ro)        │   │ *_API_KEY      │
+        │ knowledge/derived  (ro)        │   │ CYBERRISK_*    │
+        │ data/output        (rw)        │   └────────────────┘
+        └────────────────────────────────┘
+```
+
+Three build stages (`Dockerfile`):
+
+- **backend** — `python:3.12-slim`; system deps for knowledge parsing
+  (`poppler-utils`); installs the package as a **wheel** with
+  `.[web,reporting,knowledge,agent]` (the `agent` extra brings the OpenAI SDK
+  and `python-dotenv` used by the chat routes; a plain install — not
+  `pip install -e` — keeps the image decoupled from the source tree).
+  `PYTHONPATH=/app/src` is set because the runtime imports the legacy
+  top-level `agent.safety` package from `src/`.
+- **frontend** — `node:20-alpine`; `npm ci` against `package-lock.json`
+  (single source of truth) then `npm run build` → `app/frontend/dist`.
+- **runtime** — the backend image plus the built SPA; runs as an unprivileged
+  user (`USER cyberrisk`, uid 10001), health-checks `/api/health`.
 
 ```dockerfile
+# docker build -t cyberrisk:latest .   (or: docker compose up --build)
 FROM python:3.12-slim AS backend
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app/src
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential poppler-utils && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml ./
 COPY src ./src
-RUN pip install --no-cache-dir -e ".[web,reporting,knowledge]"
+RUN pip install --no-cache-dir ".[web,reporting,knowledge,agent]"
 
 FROM node:20-alpine AS frontend
 WORKDIR /build
@@ -172,8 +211,15 @@ services:
     volumes:
       - ./knowledge/corpus:/app/knowledge/corpus:ro
       - ./knowledge/manifests:/app/knowledge/manifests:ro
+      - ./knowledge/derived:/app/knowledge/derived:ro
       - ./data/output:/app/data/output
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 ```
 
 ### 2.3 Run
@@ -193,24 +239,118 @@ docker compose up --build
 Stop with `docker compose down` (add `-v` to also remove the named
 volumes). Rebuild after source changes with `docker compose up --build`.
 
-### 2.4 Secure secret handling
+### 2.4 Validating the deployment
+
+The repo ships a self-contained validation suite that exercises the seven
+deployment checks from inside a real container run. It is **not** part of the
+pytest suite (it requires Docker) and is safe to run with or without an LLM
+API key — the engine, agent construction, and RAG checks are fully offline.
+
+| Check | What it verifies |
+|---|---|
+| 1. Image builds | `docker build -t cyberrisk:latest .` succeeds |
+| 2. Container starts | the container boots and the `/api/health` healthcheck turns `healthy` |
+| 3. API responds | `GET /api/health` returns HTTP 200 |
+| 4. AI agent loads | `CyberRiskAgent` constructs offline (provider resolved lazily) |
+| 5. Risk engine executes | `load_config` → `simulate` → `compute_metrics` returns sane EAL/VaR |
+| 6. RAG retrieval works | `HashEmbedder` → `VectorStore.similarity` returns the top hit |
+| 7. Env vars load | `LLM_PROVIDER` is read at runtime; keys are runtime-only, never baked |
+
+**Run on Windows (PowerShell):**
+
+```powershell
+.\docker\validate\validate.ps1          # build + full validation
+.\docker\validate\validate.ps1 -NoBuild # reuse the existing image
+```
+
+**Run on macOS / Linux (bash):**
+
+```bash
+bash docker/validate/validate.sh
+bash docker/validate/validate.sh --no-build
+```
+
+What the runner does:
+
+1. Builds the image (or reuses it with `-NoBuild` / `--no-build`).
+2. Starts a throwaway container (`cyberrisk-validate`, auto-removed) with the
+   corpus, manifests, and output volumes mounted, then waits for `healthy`.
+3. Hits `GET /api/health` on the published port `18000`.
+4. Runs `docker/validate/smoke_test.py` inside the container — a Python
+   script that imports the package, constructs the agent, runs a 2,000-year
+   simulation, exercises the SQLite vector store, and reports env vars.
+5. If a `.env` file is present, re-runs the smoke test with `--env-file` to
+   confirm secrets are injected at runtime — and prints the env summary so
+   you can confirm a key is set **without** it being baked into the image.
+
+Each check prints `[PASS]` or `[FAIL]`; the runner exits nonzero on the first
+failure, so it drops straight into CI. Example output:
+
+```
+== [1/7] Building image cyberrisk:latest ==
+  [PASS] docker build -t cyberrisk:latest .
+== [2/7] Starting container ==
+  [PASS] container started
+  [PASS] container healthy
+== [3/7] API health check ==
+  [PASS] GET /api/health -> {"status":"ok"}
+== [4-7] In-container smoke test (agent, engine, RAG, env) ==
+  [PASS] container: package importable  — cyberrisk v0.1.0
+  [PASS] api: GET /api/health
+  [PASS] agent: CyberRiskAgent constructs offline
+  [PASS] engine: load_config + simulate + compute_metrics  — EAL=$1.23M  VaR99=$8.45M
+  [PASS] rag: embed -> vector store -> similarity  — 2 hit(s), top=chunk-0 score=0.81
+  [PASS] env: LLM_PROVIDER set  — LLM_PROVIDER=deepseek
+==========================================
+Docker validation: 8 passed, 0 failed
+==========================================
+```
+
+> **CI note:** the bash runner is designed to drop into GitHub Actions — it
+> only needs Docker and the repo. Example job: run on `ubuntu-latest`, then
+> `bash docker/validate/validate.sh --no-build` after the image is built in
+> the same job.
+
+### 2.5 Volumes & the vector index
+
+- **Corpus & manifests** (`knowledge/corpus`, `knowledge/manifests`, read-only)
+  — the RAG source content. Bind-mounted so host-side edits are visible
+  without an image rebuild.
+- **Vector index** (`knowledge/derived`, read-only) — the SQLite
+  `vector.db`. Two valid strategies:
+  1. **Baked-in (default)** — populate the index before building; the image
+     ships a self-contained retrieval store. Requires a rebuild to refresh.
+  2. **Host-mounted** — re-run `python -m cyberrisk.knowledge.update` on the
+     host and restart the container to pick up new chunks without a rebuild.
+  The two compose volume mappings shown above mount it read-only; do **not**
+  mount it writable in production.
+- **Output** (`data/output`, read-write) — generated Excel reports and charts,
+  persisted across restarts.
+
+### 2.6 Secure secret handling
 
 - **`.env` is the single source of secrets.** Compose injects it via
   `env_file`; the app reads it with `python-dotenv` at startup.
 - **`.dockerignore`** excludes `.env`, `.env.*`, `.venv/`, `node_modules/`,
-  `*.key`, `*.pem`, and other artifacts from the build context — so secrets
+  `*.key`, `*.pem`, `knowledge/derived/`, `data/raw|private|client_data/`,
+  `reports/`, `web/`, and other artifacts from the build context — so secrets
   and regenerable files never enter an image or an image layer.
 - **Never** commit `.env` (gitignored), and never pass keys on the
   `docker build` command line (they would be baked into a layer).
 - For production, prefer a secrets manager (see §3.1) that injects the same
   variables at runtime.
 
-### 2.5 Image build checklist
+### 2.7 Image build checklist
 
 - **Secrets:** never bake keys into the image — always inject via
   `env_file` / environment.
-- **Volumes:** mount `knowledge/corpus` (read) and `data/output` (write) so
-  knowledge persists and reports are retained.
+- **Extras:** install `.[web,reporting,knowledge,agent]` so the agent chat
+  routes (OpenAI SDK, `python-dotenv`) are present at runtime — not just the
+  API extras.
+- **Editable installs:** use a plain `pip install .` (wheel), not
+  `pip install -e .`, in the image.
+- **Volumes:** mount `knowledge/corpus` + `knowledge/derived` (read) and
+  `data/output` (write) so knowledge persists and reports are retained.
 - **Non-root:** run as an unprivileged user in the runtime stage
   (`USER cyberrisk`).
 - **Healthcheck:** `GET /api/health` for liveness (used by orchestration).
