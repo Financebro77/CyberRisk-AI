@@ -103,8 +103,10 @@ def index() -> FileResponse | dict:
     }
 
 
-# Serve built static assets.  The SPA fallback for unknown client-side routes
-# is handled by the path-aware error handlers in api/v1/errors.py (unchanged
+# Serve built static assets.  The multi-page build produces index.html (the
+# web dashboard) AND voice.html (the voice-first mobile client); both are
+# served as real files.  Unknown client-side routes still fall through to the
+# SPA shell via the path-aware error handlers in api/v1/errors.py (unchanged
 # behaviour for non-/api paths).
 if (FRONTEND_DIST / "index.html").exists():
     app.mount(
@@ -112,3 +114,8 @@ if (FRONTEND_DIST / "index.html").exists():
         StaticFiles(directory=FRONTEND_DIST / "assets"),
         name="assets",
     )
+    # /voice.html must be served as the real file (not the SPA fallback which
+    # would return the dashboard index.html).  Explicit route beats fallback.
+    @app.get("/voice.html", include_in_schema=False)
+    def voice_page() -> FileResponse:
+        return FileResponse(FRONTEND_DIST / "voice.html")

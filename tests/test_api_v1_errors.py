@@ -158,6 +158,26 @@ def test_non_api_unknown_route_is_not_json(client):
         assert "text/html" in resp.headers["content-type"]
 
 
+def test_voice_page_is_served_as_the_voice_client_not_the_dashboard():
+    """Regression: the multi-page build's voice.html must be served as the real
+    voice client (its own bundle), not the SPA fallback (which would return the
+    dashboard index.html).  This was a real bug -- /voice.html returned
+    main-*.js (the dashboard) instead of voice-*.js."""
+    from pathlib import Path
+
+    dist = Path(__file__).resolve().parent.parent / "app" / "frontend" / "dist"
+    if not (dist / "voice.html").exists():
+        pytest.skip("frontend not built; voice.html absent from dist")
+
+    resp = TestClient(app).get("/voice.html")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/html")
+    body = resp.text
+    # The voice client's entry bundle, not the dashboard's.
+    assert "assets/voice-" in body
+    assert "assets/main-" not in body
+
+
 # ---------------------------------------------------------------------------
 # Request IDs on every response
 # ---------------------------------------------------------------------------
