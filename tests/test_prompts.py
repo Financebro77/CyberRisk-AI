@@ -125,8 +125,13 @@ def test_rag_rules_present():
 def test_controller_system_prompt_includes_directives():
     from cyberrisk.agent.agent_controller import CyberRiskAgent
 
-    # Build an agent with a fake client (no API key needed for _init_system).
-    agent = CyberRiskAgent(client=None)  # _init_system doesn't need a client
+    # The constructor builds the LLM client eagerly (`client or factory()`),
+    # so pass a stub — no API key needed, and _init_system never calls it.
+    class _StubClient:
+        def __init__(self) -> None:
+            self.name = "stub"
+
+    agent = CyberRiskAgent(client=_StubClient())
     system = agent.memory.get()[0]["content"]
     assert "SENIOR COMMERCIAL CONSULTANT" in system
     assert "BUSINESS LANGUAGE" in system

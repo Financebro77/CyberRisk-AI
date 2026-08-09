@@ -399,6 +399,10 @@ def _write_report(results: list[ValidationResult], config) -> None:
     repo = Path(__file__).resolve().parent.parent.parent.parent
     md_path = repo / "reports" / "knowledge_validation.md"
 
+    # reports/ is a generated-output dir (gitignored); on a fresh checkout it
+    # doesn't exist yet, so create it before writing.
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+
     lines = [
         "# Knowledge Base Validation Report",
         "",

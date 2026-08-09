@@ -182,6 +182,9 @@ def write_population_report(report: PopulateReport) -> Path:
     """Write reports/knowledge_population_report.md."""
     repo = Path(__file__).resolve().parent.parent.parent.parent
     md_path = repo / "reports" / "knowledge_population_report.md"
+    # reports/ is a generated-output dir (gitignored); on a fresh checkout it
+    # doesn't exist yet, so create it before writing.
+    md_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Knowledge Population Report",
         "",
