@@ -107,7 +107,7 @@ export default function Consultant() {
   return (
     <div className="mx-auto flex h-full max-w-4xl flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-ink-200 bg-white px-6 py-4">
+      <div className="flex items-center justify-between border-b border-ink-200 bg-ink-50 px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink-950 text-brand-400">
             <ShieldCheck className="h-5 w-5" />
@@ -123,7 +123,7 @@ export default function Consultant() {
         <button
           type="button"
           onClick={newSession}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-xs font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-brand-600"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 px-3 py-1.5 text-xs font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-accent"
         >
           <RotateCcw className="h-3.5 w-3.5" />
           New conversation
@@ -150,7 +150,7 @@ export default function Consultant() {
                   key={q}
                   type="button"
                   onClick={() => void send(q)}
-                  className="tappable rounded-lg border border-ink-200 bg-white px-3.5 py-2.5 text-left text-sm text-ink-700 transition-colors hover:border-brand-500/50 hover:bg-brand-50 hover:text-ink-900"
+                  className="tappable rounded-lg border border-ink-200 bg-ink-100 px-3.5 py-2.5 text-left text-sm text-ink-700 transition-colors hover:border-accent/40 hover:bg-accent/10 hover:text-accent"
                 >
                   <span className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
@@ -177,7 +177,7 @@ export default function Consultant() {
       </div>
 
       {/* Input */}
-      <form onSubmit={onSubmit} className="border-t border-ink-200 bg-white px-6 py-4">
+      <form onSubmit={onSubmit} className="border-t border-ink-200 bg-ink-50 px-6 py-4">
         <div className="flex items-end gap-3">
           <div className="relative flex-1">
             <textarea
@@ -193,7 +193,7 @@ export default function Consultant() {
               rows={1}
               aria-label="Message the consultant"
               placeholder="Describe a company, ask for a loss model, or test an insurance structure…"
-              className="max-h-32 w-full resize-none rounded-xl border border-ink-300 bg-white px-4 py-2.5 text-sm text-ink-900 outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field max-h-32 resize-none px-4 py-2.5 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </div>
           <button

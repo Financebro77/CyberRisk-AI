@@ -67,11 +67,11 @@ export const ChatTranscript = memo(function ChatTranscript({
           {m.role === 'assistant' && <BotAvatar />}
           <div className={`${bubbleWidth} ${m.role === 'user' ? 'order-first' : ''}`}>
             {m.role === 'user' ? (
-              <div className="rounded-2xl rounded-tr-sm bg-ink-900 px-4 py-2.5 text-sm text-white">
+              <div className="rounded-2xl rounded-tr-sm bg-ink-900 px-4 py-2.5 text-sm text-ink-50">
                 {m.content}
               </div>
             ) : (
-              <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
+              <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-ink-100 px-4 py-3 shadow-sm">
                 <ChatMarkdown content={m.content} />
                 {m.toolTrace && m.toolTrace.length > 0 && (
                   <>
@@ -82,7 +82,7 @@ export const ChatTranscript = memo(function ChatTranscript({
                   </>
                 )}
                 {m.safety && (
-                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <div className="mt-3 rounded-lg border border-risk-med/30 bg-risk-med/10 px-3 py-2 text-xs text-risk-med">
                     {m.safety.response}
                   </div>
                 )}
@@ -95,7 +95,7 @@ export const ChatTranscript = memo(function ChatTranscript({
       {sending && (
         <div className="flex gap-3">
           <BotAvatar />
-          <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
+          <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-ink-100 px-4 py-3 shadow-sm">
             <TypingDots label={typingLabel} />
           </div>
         </div>

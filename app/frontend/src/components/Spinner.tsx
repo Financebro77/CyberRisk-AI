@@ -11,7 +11,7 @@ export function Spinner({
   if (small) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-ink-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-600" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
         {label}
       </span>
     );
@@ -19,8 +19,8 @@ export function Spinner({
   return (
     <div className="card panel-in flex items-center justify-center gap-4 px-6 py-12">
       <div className="relative">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
-        <span className="absolute -inset-2 rounded-full bg-brand-500/10 blur-md" />
+        <Loader2 className="h-7 w-7 animate-spin text-accent" />
+        <span className="absolute -inset-2 rounded-full bg-accent/10 blur-md" />
       </div>
       <div className="text-left">
         <div className="text-sm font-medium text-ink-900">{label}</div>

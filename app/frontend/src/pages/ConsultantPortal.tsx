@@ -25,8 +25,8 @@ function AdvisoryReport({ data }: { data: ExecutiveReportResponse }) {
   return (
     <div className="panel-in space-y-6">
       {/* Executive summary */}
-      <div className="rounded-xl border border-ink-200 bg-white p-6">
-        <div className="text-xs font-semibold uppercase tracking-[0.15em] text-brand-600">Executive summary</div>
+      <div className="card p-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.15em] text-accent">Executive summary</div>
         <p className="mt-3 font-serif text-lg leading-relaxed text-ink-900">{data.executive_summary.sentence}</p>
       </div>
 
@@ -142,7 +142,7 @@ export default function ConsultantPortal() {
   return (
     <div className="min-h-screen bg-ink-50 font-sans">
       {/* Top nav */}
-      <header className="sticky top-0 z-40 border-b border-ink-200 bg-white">
+      <header className="sticky top-0 z-40 border-b border-ink-200 bg-ink-50/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3 lg:px-8">
           <span className="text-sm font-semibold tracking-wide text-ink-900">CyberRisk AI Consultant</span>
           <nav className="flex items-center gap-1 rounded-lg border border-ink-200 bg-ink-50 p-0.5">
@@ -150,7 +150,7 @@ export default function ConsultantPortal() {
               type="button"
               onClick={() => setMode('assess')}
               className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'assess' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'
+                mode === 'assess' ? 'bg-ink-100 text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               <ClipboardList className="h-3.5 w-3.5" /> Assess
@@ -159,7 +159,7 @@ export default function ConsultantPortal() {
               type="button"
               onClick={() => setMode('chat')}
               className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'chat' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'
+                mode === 'chat' ? 'bg-ink-100 text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'
               }`}
             >
               <MessageSquare className="h-3.5 w-3.5" /> Ask the consultant

@@ -55,7 +55,7 @@ export function ChatMarkdown({ content }: { content: string }) {
           blockquote: (props) => (
             <blockquote className="my-3 border-l-2 border-brand-300 bg-brand-50 px-4 py-2 text-slate-700" {...props} />
           ),
-          a: (props) => <a className="text-brand-600 underline hover:text-brand-700" target="_blank" rel="noreferrer" {...props} />,
+          a: (props) => <a className="text-accent underline hover:opacity-80" target="_blank" rel="noreferrer" {...props} />,
           code: ({ className, children, ...rest }) => {
             const match = /language-(\w+)/.exec(className ?? '');
             if (match) {

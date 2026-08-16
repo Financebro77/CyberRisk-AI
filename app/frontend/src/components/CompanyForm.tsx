@@ -271,7 +271,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
   );
 
   return (
-    <div className="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
+    <div className="card p-6">
       <div className="mb-1 flex items-center justify-between">
         <h3 className="text-base font-semibold text-ink-900">Client profile</h3>
       </div>
@@ -291,7 +291,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               value={values.firm_name}
               onChange={set('firm_name')}
               placeholder="e.g. Meridian Logistics"
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </label>
 
@@ -302,7 +302,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               <select
                 value={values[cfg.key]}
                 onChange={set(cfg.key)}
-                className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">{cfg.placeholder}</option>
                 {cfg.options.map((o) => (
@@ -320,7 +320,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               value={values.country}
               onChange={set('country')}
               placeholder="e.g. United States"
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </label>
 
@@ -334,7 +334,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
                 value={values[k]}
                 onChange={set(k)}
                 placeholder={k === 'revenue_usd' ? 'e.g. 250000000' : ''}
-                className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               />
             </label>
           ))}
@@ -345,7 +345,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
             <select
               value={values.sensitive_records}
               onChange={set('sensitive_records')}
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               <option value="">Select type</option>
               <option>Finance &amp; HR data</option>
@@ -360,7 +360,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
             <select
               value={values.cloud_dependency}
               onChange={set('cloud_dependency')}
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               <option value="">Select level</option>
               {DEPENDENCY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -371,7 +371,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
             <select
               value={values.third_party_dependency}
               onChange={set('third_party_dependency')}
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             >
               <option value="">Select level</option>
               {DEPENDENCY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -390,7 +390,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               <select
                 value={values[cfg.key]}
                 onChange={setControl(cfg)}
-                className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               >
                 <option value="">{cfg.placeholder}</option>
                 {cfg.options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -408,12 +408,12 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               readOnly
               value={controlsText || assembledControls}
               placeholder="e.g. MFA is comprehensive, network segmentation is strong"
-              className="w-full rounded-lg border border-dashed border-ink-300 bg-ink-50 px-3 py-2 font-mono text-xs text-ink-700 outline-none"
+              className="field border-dashed font-mono text-xs text-ink-700"
             />
             <button
               type="button"
               onClick={() => setControlsText(assembledControls)}
-              className="shrink-0 rounded-lg border border-ink-300 px-3 py-2 text-xs font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-brand-600"
+              className="shrink-0 rounded-lg border border-ink-300 px-3 py-2 text-xs font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-accent"
               title="Reassemble from the selects above"
             >
               Sync
@@ -437,7 +437,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               value={values.policy_limit}
               onChange={set('policy_limit')}
               placeholder="e.g. 10000000"
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </label>
           <label className="block">
@@ -448,7 +448,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               value={values.retention}
               onChange={set('retention')}
               placeholder="e.g. 250000"
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </label>
           <label className="block">
@@ -458,7 +458,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
               min={0}
               value={values.previous_incidents}
               onChange={set('previous_incidents')}
-              className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              className="field focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             />
           </label>
         </div>
@@ -472,7 +472,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
           <button
             type="button"
             onClick={loadDemo}
-            className="inline-flex items-center gap-2 rounded-lg border border-ink-300 px-4 py-2 text-sm font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-brand-600"
+            className="inline-flex items-center gap-2 rounded-lg border border-ink-300 px-4 py-2 text-sm font-medium text-ink-600 transition-colors hover:border-brand-500 hover:text-accent"
           >
             <FlaskConical className="h-4 w-4" />
             Load Demo Company

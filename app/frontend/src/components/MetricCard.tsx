@@ -23,14 +23,14 @@ export function MetricCard({ label, value, hint, sub, accent, tone = 'default' }
     <div
       className={`card group relative p-4 transition-transform duration-200 ${
         accent
-          ? 'border-brand-500/25 bg-gradient-to-br from-brand-50/80 to-ink-50'
+          ? 'border-accent/30 bg-gradient-to-br from-accent/10 to-ink-50'
           : 'hover:shadow-md'
       }`}
     >
       <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500">
         {label}
       </div>
-      <div className={`mt-1.5 text-2xl font-semibold tabular-nums tracking-tight ${TONE[tone]}`}>
+      <div className={`mt-1.5 font-mono text-2xl font-semibold tabular-nums tracking-tight ${accent ? 'text-accent' : TONE[tone]}`}>
         {value}
       </div>
       {sub && <div className="mt-1 text-sm text-ink-600">{sub}</div>}

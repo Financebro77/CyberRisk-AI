@@ -30,7 +30,7 @@ function Flow() {
   return (
     <section className="py-16 lg:py-20">
       <div className="mx-auto max-w-3xl px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">The method</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">The method</p>
         <h1 className="mt-4 font-serif text-3xl font-medium tracking-tight text-ink-900 lg:text-4xl">
           How the model works
         </h1>
@@ -45,7 +45,7 @@ function Flow() {
               {i < FLOW.length - 1 && (
                 <span className="absolute left-[15px] top-8 h-full w-px bg-ink-200" />
               )}
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-brand-100 text-xs font-bold text-brand-600">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-xs font-bold text-accent">
                 {i + 1}
               </span>
               <div>
@@ -76,7 +76,7 @@ function MethodologySections() {
   return (
     <section className="border-t border-ink-100 bg-ink-50 py-16 lg:py-20">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">The detail</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">The detail</p>
         <h2 className="mt-4 font-serif text-3xl font-medium tracking-tight text-ink-900">
           A white-box model — every number is traceable
         </h2>
@@ -107,7 +107,7 @@ function Cta() {
     <section className="py-16">
       <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
         <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-          <ShieldCheck className="h-5 w-5 text-brand-600" />
+          <ShieldCheck className="h-5 w-5 text-accent" />
           See it applied to your company
         </div>
         <p className="mx-auto mt-3 max-w-xl text-ink-600">
@@ -128,7 +128,7 @@ function Cta() {
 
 export default function HowItWorks() {
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-ink-50 font-sans">
       <Flow />
       <MethodologySections />
       <Cta />

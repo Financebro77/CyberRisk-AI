@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Consulting design tokens — deep navy ink, slate surface, brand accent. */
+  /* Consulting design tokens — deep navy ink, slate surface, cyan accent. */
   --color-ink-950: #0b1220;
   --color-ink-900: #0f172a;
   --color-ink-800: #1e293b;
@@ -14,10 +14,21 @@
   --color-ink-100: #f1f5f9;
   --color-ink-50: #f8fafc;
 
-  --color-brand-600: #2563eb;
-  --color-brand-500: #3b82f6;
-  --color-brand-400: #60a5fa;
-  --color-brand-100: #dbeafe;
+  /* Brand = the cyan fintech accent (buttons, focus, active states).
+     brand-600 is chosen so `bg-brand-600 text-white` keeps AA contrast in
+     both modes (light: cyan-700, dark: cyan-800 on navy). */
+  --color-brand-700: #155e75;
+  --color-brand-600: #0e7490;
+  --color-brand-500: #0891b2;
+  --color-brand-400: #06b6d4;
+  --color-brand-300: #22d3ee;
+  --color-brand-200: #67e8f9;
+  --color-brand-100: #a5f3fc;
+  --color-brand-50: #cffafe;
+
+  /* Accent = the signal colour for small text / eyebrows / highlights.
+     Single value, flipped in .dark for contrast on each surface. */
+  --color-accent: #0e7490;
 
   --color-risk-low: #16a34a;
   --color-risk-med: #d97706;
@@ -49,10 +60,21 @@
   --color-ink-900: #f8fafc;
   --color-ink-950: #ffffff;
 
-  --color-brand-100: #1e3a8a;
-  --color-brand-400: #3b82f6;
-  --color-brand-500: #60a5fa;
-  --color-brand-600: #93c5fd;
+  --color-brand-100: #164e63;
+  --color-brand-200: #155e75;
+  --color-brand-300: #0e7490;
+  --color-brand-400: #0891b2;
+  --color-brand-500: #0891b2;
+  --color-brand-600: #155e75;
+  --color-brand-700: #0e7490;
+
+  --color-accent: #22d3ee;
+
+  /* Risk tones brightened so chips read on navy surfaces. */
+  --color-risk-low: #4ade80;
+  --color-risk-med: #fbbf24;
+  --color-risk-high: #f87171;
+  --color-risk-crit: #fca5a5;
 }
 
 .dark body {
@@ -97,37 +119,57 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Shared component classes — enterprise consulting surfaces
+   Shared component classes — enterprise consulting surfaces.
+
+   Defined in @layer components so Tailwind utilities (border-*, bg-*) can
+   override them per-instance — an unlayered .card would beat every utility.
    --------------------------------------------------------------------------- */
+@layer components {
+  /* Consistent card surface with a refined shadow + hairline border. */
+  .card {
+    border: 1px solid var(--color-ink-200);
+    background: var(--color-card, #ffffff);
+    border-radius: 0.75rem;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 4px 16px -8px rgba(15, 23, 42, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .dark .card {
+    --color-card: #111a2e;
+  }
+  .card-hover:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-ink-200));
+    box-shadow: 0 8px 28px -12px rgba(8, 145, 178, 0.22);
+  }
 
-/* Consistent card surface with a refined shadow + hairline border. */
-.card {
-  border: 1px solid var(--color-ink-200);
-  background: var(--color-card, #ffffff);
-  border-radius: 0.75rem;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 4px 16px -8px rgba(15, 23, 42, 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-.dark .card {
-  --color-card: #0f172a;
-}
-.card-hover:hover {
-  border-color: color-mix(in srgb, var(--color-brand-500) 45%, var(--color-ink-200));
-  box-shadow: 0 8px 28px -12px rgba(37, 99, 235, 0.18);
-}
+  /* Micro-interactions on tappable cards. */
+  .tappable {
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .tappable:hover {
+    transform: translateY(-2px);
+  }
+  .tappable:active {
+    transform: translateY(0);
+  }
 
-/* Micro-interactions on tappable cards. */
-.tappable {
-  cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.tappable:hover {
-  transform: translateY(-2px);
-}
-.tappable:active {
-  transform: translateY(0);
+  /* Form field — surfaces flip with the theme (never a hardcoded white). */
+  .field {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-ink-300);
+    background: var(--color-ink-50);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-ink-900);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .field::placeholder {
+    color: var(--color-ink-400);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -315,6 +357,23 @@ body {
 }
 .reveal-stagger > *:nth-child(8) {
   transition-delay: 630ms;
+}
+
+/* Hero signature — a soft radial glow behind the headline.  Alpha differs
+   per mode so the accent reads on both white and navy. */
+.hero-glow {
+  background: radial-gradient(
+    60% 100% at 50% 0%,
+    color-mix(in srgb, var(--color-accent) 14%, transparent),
+    transparent 70%
+  );
+}
+.dark .hero-glow {
+  background: radial-gradient(
+    60% 100% at 50% 0%,
+    color-mix(in srgb, var(--color-accent) 26%, transparent),
+    transparent 72%
+  );
 }
 
 /* ---------------------------------------------------------------------------
