@@ -1,10 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd app/frontend && npm ci && npm run build",
-  "functions": {
-    "api/vc_app.py": {
-      "maxDuration": 60,
-      "memory": 1024
+  "services": {
+    "cyberrisk-ai": {
+      "root": ".",
+      "entrypoint": "api.vc_app:app",
+      "buildCommand": "cd app/frontend && npm ci && npm run build"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": { "service": "cyberrisk-ai" } }
+  ]
 }
