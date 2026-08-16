@@ -41,13 +41,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the package first (caches dependencies across rebuilds).
-# `agent` extra carries the OpenAI SDK + python-dotenv used by the API's
-# chat routes; `knowledge` the PDF/DOCX parsers; `reporting` the Excel
-# writers.  A plain (non-editable) wheel install keeps the image decoupled
-# from the source tree.
+# `agent` extra carries the Streamlit UI; `knowledge` the PDF/DOCX parsers.
+# The web/API stack, the OpenAI SDK, python-dotenv and the Excel writers are
+# all base `[project]` dependencies now.  A plain (non-editable) wheel install
+# keeps the image decoupled from the source tree.
 COPY pyproject.toml ./
 COPY src ./src
-RUN pip install --no-cache-dir ".[web,reporting,knowledge,agent]"
+RUN pip install --no-cache-dir ".[web,agent,knowledge]"
 
 # Runtime configuration: the engine resolves its calibration at
 # <repo>/config/ (scenarios.yaml, simulation_config.yaml, scoring_weights.yaml,

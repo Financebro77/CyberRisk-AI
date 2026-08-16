@@ -37,7 +37,7 @@ class CompanyBriefRequest(BaseModel):
     customer_records: int | None = Field(default=None, ge=0)
     technology_dependency: str | None = None
     security_controls: str | None = None
-    previous_incidents: int = 0
+    previous_incidents: int = Field(default=0, ge=0)
     existing_coverage: str | None = None
     risk_appetite: str | None = None
 

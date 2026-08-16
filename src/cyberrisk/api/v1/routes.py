@@ -162,15 +162,31 @@ def assessment_results(
     assessment_id: str,
     store: AssessmentStore = Depends(get_store),
 ) -> dict[str, Any]:
-    """The full result payload for a finished assessment."""
-    entry = store.get_result(assessment_id)
+    """The full result payload for a finished assessment.
+
+    A completed-but-guarded outcome (``insufficient_info`` / ``error``) has no
+    result payload; return the stored guard so a client can prompt for the
+    missing fields instead of treating it as a missing/expired id (404).
+    A started-but-not-submitted id (``pending`` / ``ready``) still 404s: there
+    is no outcome yet.
+    """
+    entry = store.get(assessment_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Assessment not found, expired, or not yet completed.")
-    return {
-        "assessment_id": entry.assessment_id,
-        "status": entry.status,
-        "result": entry.result,
-    }
+    if entry.result is not None:
+        return {
+            "assessment_id": entry.assessment_id,
+            "status": entry.status,
+            "result": entry.result,
+        }
+    if entry.status in ("insufficient_info", "error"):
+        return {
+            "assessment_id": entry.assessment_id,
+            "status": entry.status,
+            "needed": entry.needed,
+            "message": entry.message,
+        }
+    raise HTTPException(status_code=404, detail="Assessment not found, expired, or not yet completed.")
 
 
 def _iso(timestamp: float) -> str:

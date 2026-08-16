@@ -146,7 +146,9 @@ score and the entire loss distribution, and (c) revisit retention given a
 9. **Versioned mobile API** — a mobile client runs a full assessment in **one
    round-trip** via `/api/v1` (score, EAL/VaR/ES, insurance, citations).
 10. **Deploy anywhere** — Docker, Render, or Vercel, from a single
-    multi-stage Dockerfile that builds the RAG index at build time.
+    multi-stage Dockerfile that builds the RAG index at build time
+    (on Vercel the consultant serves incident evidence and gracefully
+    omits vector-store citations).
 
 ---
 
@@ -245,7 +247,7 @@ advisor:
 | `DEEPSEEK_MODEL` | Model name (default `deepseek-chat`) | `deepseek-chat` |
 | `OPENAI_API_KEY` | Key for the OpenAI provider | `sk-...` |
 | `OPENAI_MODEL` | Model name (default `gpt-4o-mini`) | `gpt-4o-mini` |
-| `CYBERRISK_API_KEY` | *Optional* bearer key gating every `/api/*` route | `openssl rand -hex 32` |
+| `CYBERRISK_API_KEY` | *Optional* bearer key for API/CLI consumers gating every `/api/*` route — leave **unset** on web deploys (the SPA sends no bearer header) | `openssl rand -hex 32` |
 | `CYBERRISK_RATE_LIMIT` | *Optional* requests/minute per client (0 = off) | `60` |
 
 Use it programmatically in one line:
@@ -396,8 +398,9 @@ non-root user, and health-checks `/api/health`.
 
 ### Render (free tier, no laptop needed)
 The repo ships a [Render Blueprint](render.yaml) — import the repo, set
-`DEEPSEEK_API_KEY` and `CYBERRISK_API_KEY`, deploy. The iOS voice PWA is
-reachable at `https://<app>.onrender.com/voice.html` from any WiFi.
+`DEEPSEEK_API_KEY` (optionally `CYBERRISK_API_KEY` for API consumers; leave it
+unset for the web UI, which sends no bearer header), deploy. The iOS voice PWA
+is reachable at `https://<app>.onrender.com/voice.html` from any WiFi.
 Details in [docs/deployment.md](docs/deployment.md).
 
 ### Vercel (serverless)
@@ -407,11 +410,13 @@ The repo ships a zero-config FastAPI deployment (`vercel.json`, `api/vc_app.py`)
 npm i -g vercel && vercel deploy --prod
 ```
 
-Set `LLM_PROVIDER=deepseek` and `DEEPSEEK_API_KEY` (plus `CYBERRISK_API_KEY`
-to gate the API) in the project's **Environment Variables**. The build command
-compiles the React SPA, Vercel promotes the FastAPI static mount to the CDN,
-and `/api/*` + unknown client-side routes fall through to the serverless
-function.
+Set `LLM_PROVIDER=deepseek` and `DEEPSEEK_API_KEY` (leave `CYBERRISK_API_KEY`
+unset — the SPA sends no bearer header) in the project's **Environment
+Variables**. The build command compiles the React SPA, Vercel promotes the
+FastAPI static mount to the CDN, and `/api/*` + unknown client-side routes fall
+through to the serverless function. Vercel serves the SPA, API, Excel reports
+and incident evidence; vector-store RAG citations are baked at build time on
+Docker/Render and gracefully omitted here.
 
 ---
 

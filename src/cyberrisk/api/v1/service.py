@@ -26,11 +26,14 @@ logger = logging.getLogger("cyberrisk.api.v1")
 
 # The retriever reads a read-only vector store; build it once per process and
 # reuse it across requests (re-opening SQLite + re-reading every vector per
-# submit is wasted work).
+# submit is wasted work).  The cache is keyed on the vector.db mtime so a
+# corpus rebuild (which replaces the store) is picked up automatically, and it
+# resets on failure so the next request retries.
 if TYPE_CHECKING:
     from cyberrisk.knowledge.rag import Retriever
 
 _retriever: Retriever | None = None
+_retriever_db_mtime: float | None = None
 
 
 def run_assessment_pipeline(
@@ -130,13 +133,18 @@ def gather_evidence(
         query = f"{query} {drivers[0]}"
 
     # 1. RAG semantic search over the knowledge corpus.  The retriever wraps a
-    #    read-only vector store — build it once and reuse it across requests.
+    #    read-only vector store — build it once and reuse it across requests,
+    #    invalidated when vector.db is rebuilt (mtime change) or on failure.
     try:
-        global _retriever
-        if _retriever is None:
-            from cyberrisk.knowledge.rag import Retriever
+        global _retriever, _retriever_db_mtime
+        from cyberrisk.knowledge.config import load_ingest_config
+        from cyberrisk.knowledge.rag import Retriever
 
+        db_path = load_ingest_config().derived_path / "vector.db"
+        mtime = db_path.stat().st_mtime if db_path.exists() else None
+        if _retriever is None or mtime != _retriever_db_mtime:
             _retriever = Retriever.from_derived(top_k=4)
+            _retriever_db_mtime = mtime
         chunks = _retriever.retrieve(query) if query else []
         seen: set[str] = set()
         for chunk in chunks:
@@ -154,6 +162,8 @@ def gather_evidence(
                 }
             )
     except FileNotFoundError:
+        _retriever = None
+        _retriever_db_mtime = None
         note = "Knowledge base not available; evidence omitted."
         logger.warning("evidence skipped (no vector store): request_id=%s", request_id)
     except Exception:  # noqa: BLE001 - evidence must never break the assessment

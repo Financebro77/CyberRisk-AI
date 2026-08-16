@@ -20,3 +20,7 @@ if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
 from cyberrisk.api.main import app  # noqa: E402
+
+# Export contract for Vercel's entrypoint resolution (`api.vc_app:app`);
+# `app` is deliberately unused within this module.
+__all__ = ["app"]

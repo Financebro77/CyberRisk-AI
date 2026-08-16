@@ -24,6 +24,7 @@ Every tool returns a JSON-serialisable dict (floats / lists / strings).
 
 from __future__ import annotations
 
+import hashlib
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -773,9 +774,16 @@ def search_incidents(
 
 
 def report_filename(name: str) -> str:
-    """The on-disk workbook filename for a firm (shared with the download route)."""
+    """The on-disk workbook filename for a firm (shared with the download route).
+
+    The sanitized name is suffixed with a short hash of the original so two
+    distinct firm names can never collapse to the same file (e.g. "Acme Corp"
+    vs "Acme/Corp"), which would otherwise let one tenant download another's
+    workbook via ``/api/report/download?firm=...``.
+    """
     safe_name = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in name).strip("_") or "Client"
-    return f"{safe_name}_report.xlsx"
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8]
+    return f"{safe_name}_{digest}_report.xlsx"
 
 
 def generate_risk_report(
