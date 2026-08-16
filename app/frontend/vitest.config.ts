@@ -11,7 +11,7 @@ export default defineConfig({
   test: {
     // The voice-client tests run in a browser-like DOM without a full browser.
     environment: 'happy-dom',
-    include: ['src/voice/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/voice/__tests__/setup.ts'],
   },
 });

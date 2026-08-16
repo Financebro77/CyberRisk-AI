@@ -1,13 +1,14 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Eraser, FlaskConical, Loader2, Play } from 'lucide-react';
-import type { CompanyBrief } from '../lib/types';
+import { randomizeDemoCompany } from '../lib/demoRandom';
+import type { CompanyBrief, PolicyInput } from '../lib/types';
 
 interface CompanyFormProps {
   /** Extra controls rendered under the brief fields (policy terms, control change, etc.). */
   children?: React.ReactNode;
   /** Button label, defaults to "Run Model". */
   submitLabel?: string;
-  onSubmit: (brief: CompanyBrief) => void | Promise<unknown>;
+  onSubmit: (brief: CompanyBrief & PolicyInput) => void | Promise<unknown>;
   loading?: boolean;
   initial?: CompanyBrief;
 }
@@ -114,36 +115,7 @@ function buildSecurityControls(c: {
   return clauses.join(', ');
 }
 
-/**
- * Demo client — a realistic mid-market profile with strong controls so the
- * Monte Carlo run shows meaningful (non-trivial) loss numbers.  Module-local:
- * only used to pre-fill the form, and not exporting it keeps this file
- * component-only (Fast Refresh).
- */
-const DEMO_COMPANY: CompanyBrief = {
-  firm_name: 'Meridian Logistics',
-  industry: 'Manufacturing',
-  revenue_usd: 250_000_000,
-  customer_records: 120_000,
-  technology_dependency: 'High',
-  country: 'United States',
-  employees: 1_200,
-  sensitive_records: 'Finance & HR data',
-  cloud_dependency: 'Moderate',
-  third_party_dependency: 'High',
-  mfa_coverage: 'Partial',
-  pam: 'Defined',
-  network_segmentation: 'Basic',
-  backup_strategy: 'Daily',
-  vulnerability_management: 'Monthly',
-  incident_response: 'Documented',
-  previous_incidents: 2,
-  existing_coverage: '$10M limit, $250k retention',
-  risk_appetite: 'Retain up to $1M',
-  policy_limit: 10_000_000,
-  retention: 250_000,
-  // security_controls is assembled at submit time from the selects above.
-};
+/* Demo Mode loads a fresh random company every press (see lib/demoRandom). */
 
 /* ------------------------ select configs ----------------------- */
 
@@ -227,7 +199,8 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
   };
 
   const loadDemo = () => {
-    setValues(initialValues(DEMO_COMPANY));
+    // A fresh random company each press (see lib/demoRandom.ts).
+    setValues(initialValues(randomizeDemoCompany().brief));
     setControlsText('');
   };
 
@@ -243,7 +216,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
   }, [values, assembledControls, controlsText]);
 
   const submit = () => {
-    const brief: CompanyBrief = {
+    const brief: CompanyBrief & PolicyInput = {
       firm_name: values.firm_name || undefined,
       industry: values.industry || undefined,
       technology_dependency: values.technology_dependency || undefined,
@@ -268,8 +241,10 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
     if (values.customer_records !== '') brief.customer_records = Number(values.customer_records);
     if (values.employees !== '') brief.employees = Number(values.employees);
     brief.previous_incidents = values.previous_incidents === '' ? 0 : Number(values.previous_incidents);
-    if (values.policy_limit !== '') brief.policy_limit = Number(values.policy_limit);
-    if (values.retention !== '') brief.retention = Number(values.retention);
+    // The insurance knobs the engine honors: retention = per-occurrence
+    // deductible, policy limit = annual aggregate limit (see /api/report/executive).
+    if (values.retention !== '') brief.per_occurrence_deductible = Number(values.retention);
+    if (values.policy_limit !== '') brief.annual_aggregate_limit = Number(values.policy_limit);
     void onSubmit(brief);
   };
 

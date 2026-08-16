@@ -77,6 +77,16 @@ class ReportRequest(CompanyBriefRequest):
     """A client brief plus an optional firm name for the workbook."""
 
 
+class ExecutiveReportRequest(CompanyBriefRequest, PolicyTerms):
+    """A client brief plus optional policy terms.
+
+    The web SPA lets the user tweak risk retention / policy limit before
+    running an assessment; those knobs must reach the insurance engine
+    (``policy_from_request``) so the insurance_analysis section reflects them
+    instead of always running with the default policy.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -263,7 +273,7 @@ def report_download(firm: str | None = None) -> Any:
 
 
 @router.post("/report/executive")
-def report_executive(req: ReportRequest) -> dict[str, Any]:
+def report_executive(req: ExecutiveReportRequest) -> dict[str, Any]:
     """Aggregate the full executive-report data in one response.
 
     Calls the existing tools read-only (score + simulate + insurance + scenario
@@ -277,7 +287,11 @@ def report_executive(req: ReportRequest) -> dict[str, Any]:
     # The shared four-step composition (score -> simulate -> insurance ->
     # contribution).  The mitigation roadmap reuses the scenario-contribution
     # detail the simulation already computed, so this never re-runs the model.
-    out = compose_assessment(brief, n_years=n_years)
+    out = compose_assessment(
+        brief,
+        policy=policy_from_request(data),
+        n_years=n_years,
+    )
     if out["status"] != "ok":
         return out
     score_res = out["score"]

@@ -73,7 +73,7 @@ export const api = {
 
   reportDownloadUrl: () => '/api/report/download',
 
-  executiveReport: (brief: CompanyBrief) =>
+  executiveReport: (brief: CompanyBrief & PolicyInput) =>
     post<ApiResult<ExecutiveReportResponse>>('/report/executive', brief),
 
   methodology: () => request<MethodologyResponse>('/model/methodology'),
