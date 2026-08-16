@@ -14,14 +14,12 @@ read-only exactly as the agent consumes it.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
 from cyberrisk import __version__
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 from cyberrisk.agent.model_mechanics import explain_model_mechanics
 from cyberrisk.agent.sensitivity_tools import run_control_improvement_scenario
 from cyberrisk.agent.tools import (
@@ -29,6 +27,7 @@ from cyberrisk.agent.tools import (
     assess_company_risk,
     generate_risk_report,
     report_filename,
+    report_output_dir,
     run_loss_simulation,
 )
 from cyberrisk.agent.schemas import PolicyInput as PolicyInputDTO
@@ -238,7 +237,7 @@ def report_download(firm: str | None = None) -> Any:
     """
     from fastapi.responses import FileResponse
 
-    data_dir = REPO_ROOT / "data" / "output"
+    data_dir = report_output_dir()
     if firm:
         # Same on-disk name the generator wrote (see report_filename).
         candidate = data_dir / report_filename(firm)

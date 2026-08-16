@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 
@@ -773,6 +774,27 @@ def search_incidents(
     }
 
 
+@lru_cache(maxsize=1)
+def report_output_dir() -> Path:
+    """Where generated workbooks are written and downloaded from.
+
+    On a normal host this is ``<repo>/data/output``.  Serverless functions
+    (Vercel) mount the bundle read-only, so fall back to a writable temp dir
+    (ephemeral — fine for the generate-then-download flow).
+    """
+    local = REPO_ROOT / "data" / "output"
+    try:
+        local.mkdir(parents=True, exist_ok=True)
+        probe = local / ".write_probe"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return local
+    except OSError:
+        tmp = Path(tempfile.gettempdir()) / "cyberrisk-report-output"
+        tmp.mkdir(parents=True, exist_ok=True)
+        return tmp
+
+
 def report_filename(name: str) -> str:
     """The on-disk workbook filename for a firm (shared with the download route).
 
@@ -821,7 +843,7 @@ def generate_risk_report(
         scenario_keys=result.scenario_keys,
         policy=structure,
     )
-    out_dir_path = Path(out_dir) if out_dir else REPO_ROOT / "data" / "output"
+    out_dir_path = Path(out_dir) if out_dir else report_output_dir()
     out_dir_path.mkdir(parents=True, exist_ok=True)
 
     from cyberrisk.reporting.excel import write_report
