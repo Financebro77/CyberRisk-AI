@@ -1,11 +1,9 @@
-# Vercel / serverless runtime dependencies for the CyberRisk AI web app.
+# Runtime dependencies for the CyberRisk AI web app.
 #
-# This file is the dependency manifest for the Vercel Python Function (the
-# zero-config FastAPI deployment in `api/vc_app.py`).  It mirrors the
-# `[project]` base deps plus the `web` and `agent` extras from pyproject.toml —
-# the exact module-level import closure the FastAPI app needs at runtime
-# (test, reporting, and streamlit-UI deps are intentionally omitted: they would
-# only bloat the serverless bundle).  Local installs still use pyproject.toml:
+# Source of truth is pyproject.toml `[project] dependencies` (Vercel's Python
+# runtime installs from there in services mode). This file mirrors the same
+# set for deploy targets that only read requirements.txt (Docker, Render,
+# `pip install -r requirements.txt`). Local installs use pyproject.toml:
 #   pip install -e ".[web,agent]"
 numpy>=1.23
 pandas>=1.5

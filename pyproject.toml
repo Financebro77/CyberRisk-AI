@@ -8,12 +8,22 @@ version = "0.1.0"
 description = "Commercial cyber risk assessment: scenario-based frequency-severity loss engine, Monte Carlo VaR/ES, insurance structuring."
 requires-python = ">=3.10"
 dependencies = [
+    # Core numerical / modeling stack
     "numpy>=1.23",
     "pandas>=1.5",
     "scipy>=1.9",
     "pyyaml>=6.0",
     "pydantic>=2.0",
     "matplotlib>=3.6",
+    # Web / API stack — Vercel's Python runtime installs [project] dependencies
+    # (not requirements.txt), so the FastAPI serverless closure must live in
+    # the base set, not in extras.
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    # AI consultant / agent runtime (lazily imported by src/cyberrisk/agent)
+    "openai>=1.0",
+    "python-dotenv>=1.0",
+    "requests>=2.28",
 ]
 
 [project.optional-dependencies]

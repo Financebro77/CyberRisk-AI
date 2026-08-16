@@ -5,9 +5,8 @@
 # exclude app/frontend/dist here — it is produced by the buildCommand and the
 # FastAPI static-file hook promotes it to the CDN.
 
-# Local tooling / version control
-.venv
-.venv/**
+# Local tooling / version control (covers .venv, .venv-*, any throwaway venv)
+.venv*
 .git
 .git/**
 .vercel
