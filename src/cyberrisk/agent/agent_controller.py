@@ -272,6 +272,15 @@ class CyberRiskAgent:
             if injected and self.memory.messages:
                 # Pop the per-turn RAG system message, restoring the base.
                 self.memory.messages.pop(0)
+        # Hallucination backstop: check_llm_output validates every claim-framed
+        # dollar figure in the answer against the metrics the tools returned
+        # (5% tolerance).  It never blocks -- when the model drifted from the
+        # numbers, add a visible caveat so the client is not misled.
+        if not self._post_guard(answer, tool_metrics).ok:
+            answer += (
+                "\n\n(Note: some figures above could not be fully verified "
+                "against the model's outputs; treat them as indicative.)"
+            )
         answer = append_disclosure(answer)
         self.memory.append({"role": "assistant", "content": answer})
         return answer
@@ -335,10 +344,20 @@ class CyberRiskAgent:
         self.memory.append({"role": "user", "content": message})
 
     def _run_tool_loop(self) -> tuple[str, dict[str, float]]:
+        from cyberrisk.agent.prompts import GROUNDING_REMINDER
+
         tool_metrics: dict[str, float] = {}
+        grounded = False  # the final-answer reminder is injected once per turn
         for _round in range(self.config.max_tool_rounds):
+            messages = self.memory.get()
+            # Reinforce grounding only once, only after a tool ran this turn,
+            # and WITHOUT persisting -- it is per-answer guidance, not part of
+            # the conversation history.
+            if not grounded and self.tool_trace:
+                messages = [*messages, {"role": "user", "content": GROUNDING_REMINDER}]
+                grounded = True
             response = self.client.chat(
-                self.memory.get(),
+                messages,
                 tools=TOOL_SCHEMAS,
                 temperature=self.config.temperature,
                 max_tokens=self.config.max_tokens,

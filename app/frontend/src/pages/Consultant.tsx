@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import type { ChatToolTrace } from '../lib/types';
-import { ChatMarkdown } from '../components/ChatMarkdown';
-import { ChatToolCharts, ToolTraceFooter } from '../components/ChatToolCharts';
+import { transcriptFromTurn } from '../lib/transcript';
+import type { TranscriptMessage } from '../lib/types';
+import { ChatTranscript } from '../components/ChatTranscript';
 import { InlineSpinner } from '../components/Spinner';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Bot, Send, ShieldCheck, Sparkles, RotateCcw } from 'lucide-react';
@@ -17,30 +17,9 @@ const SUGGESTED_QUESTIONS = [
   'What are the top risk drivers for a financial services firm with high third-party dependency?',
 ];
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  toolTrace: ChatToolTrace[];
-  safety?: { class_name: string; response: string } | null;
-}
-
-/** Three-dot typing indicator. */
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex gap-1">
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:0ms]" />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:150ms]" />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:300ms]" />
-      </span>
-      <span className="text-xs font-medium text-ink-500">Consultant is working…</span>
-    </div>
-  );
-}
-
 export default function Consultant() {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<TranscriptMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +42,7 @@ export default function Consultant() {
       try {
         const s = await api.chat.createSession();
         if (!cancelled) setSessionId(s.session_id);
-      } catch (err) {
+      } catch {
         if (!cancelled) setError('Could not start a consultant session. Is the API running?');
       }
     })();
@@ -92,23 +71,9 @@ export default function Consultant() {
       try {
         const res = await api.chat.turn(sessionId, { message: trimmed });
         setModel(res.model);
-        // Fresh history from the server keeps the UI authoritative.
-        setMessages(
-          res.history.map((m) => ({
-            role: m.role === 'user' ? 'user' : 'assistant',
-            content: m.content,
-            toolTrace: m.role === 'assistant' ? res.tool_trace : [],
-          })),
-        );
-        // The final assistant message needs its tool trace.
-        setMessages((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = { ...last, toolTrace: res.tool_trace, safety: res.safety };
-          }
-          return next;
-        });
+        // Rebuild the transcript from the server so the UI never holds a
+        // divergent copy of the conversation.
+        setMessages(transcriptFromTurn(res.history, res.tool_trace, res.safety));
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Something went wrong';
         setError(msg);
@@ -197,45 +162,12 @@ export default function Consultant() {
           </div>
         )}
 
-        {messages.map((m, i) => (
-          <div key={i} className={`panel-in flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-            {m.role === 'assistant' && (
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-brand-400">
-                <Bot className="h-4.5 w-4.5" />
-              </div>
-            )}
-            <div className={`max-w-[82%] ${m.role === 'user' ? 'order-first' : ''}`}>
-              {m.role === 'user' ? (
-                <div className="rounded-2xl rounded-tr-sm bg-ink-900 px-4 py-2.5 text-sm text-white">
-                  {m.content}
-                </div>
-              ) : (
-                <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
-                  <ChatMarkdown content={m.content} />
-                  {m.toolTrace && m.toolTrace.length > 0 && (
-                    <>
-                      <div className="mt-3">
-                        <ChatToolCharts trace={m.toolTrace} />
-                      </div>
-                      <ToolTraceFooter trace={m.toolTrace} />
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {sending && (
-          <div className="flex gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-brand-400">
-              <Bot className="h-4.5 w-4.5" />
-            </div>
-            <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
-              <TypingIndicator />
-            </div>
-          </div>
-        )}
+        <ChatTranscript
+          messages={messages}
+          sending={sending}
+          animateRows
+          typingLabel="Consultant is working…"
+        />
 
         {error && (
           <ErrorBanner message={error} onRetry={() => setError(null)} />

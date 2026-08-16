@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd app/frontend && npm ci && npm run build",
+  "functions": {
+    "api/vc_app.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}

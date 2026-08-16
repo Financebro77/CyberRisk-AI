@@ -38,12 +38,6 @@ import logging
 import os
 from io import StringIO
 
-import pytest
-from fastapi.testclient import TestClient
-
-from cyberrisk.api.main import app
-from cyberrisk.api.security import _reset_rate_limits
-from cyberrisk.api.v1.store import get_store
 from cyberrisk.agent.agent_controller import CyberRiskAgent
 from cyberrisk.agent.disclosure import DISCLOSURE_HEADING
 from cyberrisk.agent.schemas import AgentConfig, CompanyBrief
@@ -65,33 +59,6 @@ FULL_BRIEF = {
     "existing_coverage": "Standalone cyber policy with a $10M limit and $1M deductible",
     "risk_appetite": "Moderate - avoid catastrophic tail losses",
 }
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(autouse=True)
-def _isolate_api_security(monkeypatch):
-    """Auth + rate limiting OFF (covered separately in the security tests)."""
-    monkeypatch.delenv("CYBERRISK_API_KEY", raising=False)
-    monkeypatch.delenv("CYBERRISK_RATE_LIMIT", raising=False)
-    _reset_rate_limits()
-    yield
-    _reset_rate_limits()
-
-
-@pytest.fixture(autouse=True)
-def _clean_store():
-    get_store().clear()
-    yield
-    get_store().clear()
-
-
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(app)
 
 
 # ---------------------------------------------------------------------------
@@ -243,14 +210,17 @@ def test_e2e_agent_pipeline_and_engine_produce_results(client):
 
 
 def test_e2e_engine_reuses_the_existing_tool_seam(client):
-    """The v1 pipeline must NOT duplicate risk logic: it calls the exact same
+    """The assessment pipeline must NOT duplicate risk logic: it calls the exact same
     tool functions the chat agent calls (read-only)."""
     from cyberrisk.agent import tools as agent_tools
+    from cyberrisk.api import assessment as shared_assessment
     from cyberrisk.api.v1 import service as v1_service
 
-    assert v1_service.assess_company_risk is agent_tools.assess_company_risk
-    assert v1_service.run_loss_simulation is agent_tools.run_loss_simulation
-    assert v1_service.analyse_insurance_structure is agent_tools.analyse_insurance_structure
+    assert shared_assessment.assess_company_risk is agent_tools.assess_company_risk
+    assert shared_assessment.run_loss_simulation is agent_tools.run_loss_simulation
+    assert shared_assessment.analyse_insurance_structure is agent_tools.analyse_insurance_structure
+    # Evidence gathering stays in the v1 service (gather_evidence) and reuses
+    # the same incident-lookup tool.
     assert v1_service.search_incidents is agent_tools.search_incidents
 
 
@@ -286,6 +256,11 @@ def test_e2e_rag_degrades_gracefully_when_store_absent(client, monkeypatch):
     def _raise(*_a, **_k):
         raise FileNotFoundError("no vector store")
 
+    # Drop the process-level retriever cache so the patched constructor is
+    # actually exercised (the cache persists across tests in this process).
+    import cyberrisk.api.v1.service as service
+
+    monkeypatch.setattr(service, "_retriever", None, raising=False)
     # Patch the classmethod at its definition site so both the RAG module and
     # the v1 service see the patched behaviour.
     monkeypatch.setattr("cyberrisk.knowledge.rag.Retriever.from_derived", _raise)
@@ -387,10 +362,10 @@ def test_e2e_agent_calls_the_same_engine_tools_as_the_api(client):
     """The agent's tool implementations and the API's pipeline are the SAME
     functions -- the mobile API and the chat consultant are one engine."""
     from cyberrisk.agent.agent_controller import _TOOL_IMPLEMENTATIONS
-    from cyberrisk.api.v1 import service as v1_service
+    from cyberrisk.api import assessment as shared_assessment
 
     assert _TOOL_IMPLEMENTATIONS["run_loss_simulation"] is not None
-    assert v1_service.run_loss_simulation is not None
+    assert shared_assessment.run_loss_simulation is not None
     # Both reach the calibrated model config (loaded once, read-only).
     from cyberrisk.agent.tools import _model_config as tools_model_config
 

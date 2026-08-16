@@ -12,29 +12,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from cyberrisk.api.main import app
-from cyberrisk.api.security import _reset_rate_limits
-from cyberrisk.api.v1.store import get_store
-
-
-@pytest.fixture(autouse=True)
-def _isolate_api_security(monkeypatch):
-    monkeypatch.delenv("CYBERRISK_API_KEY", raising=False)
-    monkeypatch.delenv("CYBERRISK_RATE_LIMIT", raising=False)
-    _reset_rate_limits()
-    yield
-    _reset_rate_limits()
-
-
-@pytest.fixture(autouse=True)
-def _clean_store():
-    get_store().clear()
-    yield
-    get_store().clear()
-
-
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(app)
 
 
 def _assert_envelope(body, code, status):

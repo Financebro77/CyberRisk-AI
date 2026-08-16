@@ -10,7 +10,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import type { ChatToolTrace } from '../lib/types';
+import { transcriptFromTurn } from '../lib/transcript';
+import type { ChatToolTrace, TranscriptMessage } from '../lib/types';
 
 /** Exact user-facing error strings — exported so UI and tests share them. */
 export const BACKEND_UNAVAILABLE =
@@ -18,14 +19,6 @@ export const BACKEND_UNAVAILABLE =
 export const RECOGNITION_FAILURE = "I couldn't hear that clearly. Please try again.";
 export const INSUFFICIENT_MODEL_INFO =
   'I need a little more information before I can calculate the risk.';
-
-/** A chat message the voice client renders. */
-export interface VoiceMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  toolTrace: ChatToolTrace[];
-  safety?: { class_name: string; response: string } | null;
-}
 
 /** ChatTurnResponse plus the backend's `privacy_notice` (absent from lib types). */
 export interface VoiceTurnResponse {
@@ -41,7 +34,7 @@ export interface VoiceTurnResponse {
 
 export function useChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<VoiceMessage[]>([]);
+  const [messages, setMessages] = useState<TranscriptMessage[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState<string>('');
@@ -63,18 +56,10 @@ export function useChat() {
     }
   }, []);
 
-  // Create the session once on mount.
+  // Create the session once on mount.  createSession sets the error itself on
+  // failure, so no duplicate error here.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const ok = await createSession();
-      if (!ok && !cancelled) {
-        setError(BACKEND_UNAVAILABLE);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void createSession();
   }, [createSession]);
 
   /** Send one user turn.  Returns true if it reached the backend. */
@@ -98,21 +83,7 @@ export function useChat() {
         setPrivacyNotice(res.privacy_notice ?? '');
         // Rebuild the transcript from the server so the client never holds a
         // divergent copy of the conversation.
-        setMessages(
-          res.history.map((m) => ({
-            role: m.role === 'user' ? 'user' : 'assistant',
-            content: m.content,
-            toolTrace: m.role === 'assistant' ? res.tool_trace : [],
-          })),
-        );
-        setMessages((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = { ...last, toolTrace: res.tool_trace, safety: res.safety };
-          }
-          return next;
-        });
+        setMessages(transcriptFromTurn(res.history, res.tool_trace, res.safety));
         return true;
       } catch {
         if (seq === turnSeq.current) {
@@ -139,21 +110,26 @@ export function useChat() {
     setInputValue('');
   }, []);
 
-  /** End the session: DELETE on the backend, then start a fresh one. */
+  /** End the session: reset the UI now, discard the backend session in the
+   *  background, then start a fresh one.  The DELETE is fire-and-forget so a
+   *  slow backend cannot block the reset or the new session. */
   const endSession = useCallback(async () => {
     const prevId = sessionId;
     if (prevId) {
-      try {
-        await api.chat.deleteSession(prevId);
-      } catch {
+      // Fire-and-forget; Promise.resolve() tolerates a non-Promise return.
+      Promise.resolve(api.chat.deleteSession(prevId)).catch(() => {
         /* backend session already gone — best-effort */
-      }
+      });
     }
     setMessages([]);
     setError(null);
     setPrivacyNotice('');
     setInputValue('');
+    // Invalidate any in-flight turn (its finally will skip setSending(false)
+    // because the seq no longer matches), so clear `sending` here or the
+    // voice client wedges on "thinking" forever.
     turnSeq.current += 1;
+    setSending(false);
     await createSession();
   }, [sessionId, createSession]);
 

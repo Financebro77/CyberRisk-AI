@@ -1,0 +1,34 @@
+# Files/directories pruned from the Vercel deployment bundle.
+#
+# The Vercel Python Function bundles everything reachable at build time, so
+# heavy or local-only artifacts must be excluded to stay lean.  NOTE: do NOT
+# exclude app/frontend/dist here — it is produced by the buildCommand and the
+# FastAPI static-file hook promotes it to the CDN.
+
+# Local tooling / version control
+.venv
+.venv/**
+.git
+.git/**
+.vercel
+.vercel/**
+.vscode
+.idea
+
+# Frontend / Node tooling (reinstalled from package-lock.json during build)
+node_modules
+**/node_modules/**
+
+# Python caches & test scaffolding (not needed at runtime)
+__pycache__
+**/__pycache__/**
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.hypothesis
+tests
+examples
+
+# Knowledge derived artifacts are rebuilt by pipelines, never committed
+knowledge/derived
+knowledge/derived/**

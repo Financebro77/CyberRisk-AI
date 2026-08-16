@@ -10,8 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Send, ShieldCheck, Eraser, CircleStop, Bot, Sparkles } from 'lucide-react';
-import { ChatMarkdown } from '../components/ChatMarkdown';
-import { ChatToolCharts, ToolTraceFooter } from '../components/ChatToolCharts';
+import { ChatTranscript } from '../components/ChatTranscript';
 import { useChat, RECOGNITION_FAILURE } from './useChat';
 import { useVoice, deriveVoiceState, voiceStateLabel, micStatusLabel } from './useVoice';
 import type { VoiceErrorKind } from './speech';
@@ -24,7 +23,6 @@ function voiceErrorMessage(kind: VoiceErrorKind): string {
 export function VoiceConsultant() {
   const chat = useChat();
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [thinking, setThinking] = useState(false);
   const lastAssistantRef = useRef<string>('');
 
   const handleTranscript = useCallback(
@@ -41,14 +39,9 @@ export function VoiceConsultant() {
 
   const voice = useVoice({ onTranscript: handleTranscript, onError: handleVoiceError });
 
-  // Reflect the chat `sending` flag into the derived state machine.
-  useEffect(() => {
-    setThinking(chat.sending);
-  }, [chat.sending]);
-
   // Speak the newest assistant message aloud, and remember it so re-renders
   // (e.g. error-state flips) don't re-read it.
-  const latestAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
+  const latestAssistant = chat.messages.findLast((m) => m.role === 'assistant');
   const latestText = latestAssistant?.content ?? '';
   useEffect(() => {
     if (
@@ -62,15 +55,17 @@ export function VoiceConsultant() {
     }
   }, [latestText, chat.sending, voice.engine]);
 
+  // Displayed state is derived (see useVoice): `sending` is the 'thinking'
+  // input, so no extra state mirror is needed here.
   const voiceState = deriveVoiceState({
     listening: voice.listening,
     speaking: voice.speaking,
-    thinking,
+    thinking: chat.sending,
   });
 
   const micActive = voiceState === 'listening';
   const isBusy = voiceState === 'thinking' || voiceState === 'speaking';
-  const canSend = chat.sessionId !== null && !isBusy && chat.sending === false;
+  const canSend = chat.sessionId !== null && !isBusy;
 
   const onMicClick = () => {
     if (voiceState === 'listening') {
@@ -140,54 +135,7 @@ export function VoiceConsultant() {
             </div>
           )}
 
-          {chat.messages.map((m, i) => (
-            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-              {m.role === 'assistant' && (
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-brand-400">
-                  <Bot className="h-4.5 w-4.5" />
-                </div>
-              )}
-              <div className={`max-w-[84%] ${m.role === 'user' ? 'order-first' : ''}`}>
-                {m.role === 'user' ? (
-                  <div className="rounded-2xl rounded-tr-sm bg-ink-900 px-4 py-2.5 text-sm text-white">
-                    {m.content}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
-                    <ChatMarkdown content={m.content} />
-                    {m.toolTrace && m.toolTrace.length > 0 && (
-                      <>
-                        <div className="mt-3">
-                          <ChatToolCharts trace={m.toolTrace} />
-                        </div>
-                        <ToolTraceFooter trace={m.toolTrace} />
-                      </>
-                    )}
-                    {m.safety && (
-                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        {m.safety.response}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {chat.sending && (
-            <div className="flex gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-brand-400">
-                <Bot className="h-4.5 w-4.5" />
-              </div>
-              <div className="rounded-2xl rounded-tl-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
-                <span className="flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-500 [animation-delay:300ms]" />
-                </span>
-              </div>
-            </div>
-          )}
+          <ChatTranscript messages={chat.messages} sending={chat.sending} bubbleWidth="max-w-[84%]" />
 
           {displayError && (
             <div

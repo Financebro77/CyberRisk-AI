@@ -18,76 +18,54 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
 
 from cyberrisk import __version__
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 from cyberrisk.agent.model_mechanics import explain_model_mechanics
 from cyberrisk.agent.sensitivity_tools import run_control_improvement_scenario
-from cyberrisk.agent.scenario_contribution import analyze_scenario_contribution
 from cyberrisk.agent.tools import (
     analyse_insurance_structure,
     assess_company_risk,
     generate_risk_report,
+    report_filename,
     run_loss_simulation,
 )
 from cyberrisk.agent.schemas import PolicyInput as PolicyInputDTO
-from cyberrisk.agent.disclosure import DISCLOSURE_HEADING, LIMITATIONS
 
+from cyberrisk.api.assessment import (
+    compose_assessment,
+    mitigation_scenarios,
+    model_limitations,
+)
 from cyberrisk.api.dependencies import (
     brief_from_request,
     n_years_from_request,
     policy_from_request,
 )
+from cyberrisk.api.models import CompanyBriefRequest, PolicyTerms, SimulationKnobs
 from cyberrisk.calibration import load_config
 
 router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
-# Request bodies (thin envelopes so FastAPI validates + documents the shape)
+# Request bodies (thin envelopes over the shared api.models bases so FastAPI
+# validates + documents the shape; field constraints mirror the tool DTOs)
 # ---------------------------------------------------------------------------
 
 
-class ScoreRequest(BaseModel):
+class ScoreRequest(CompanyBriefRequest):
     """A client brief for scoring.  All fields optional -- scoring works on
     partial briefs and reports what was assumed."""
 
-    firm_name: str | None = None
-    industry: str | None = None
-    revenue_usd: float | None = Field(default=None, gt=0.0)
-    customer_records: int | None = Field(default=None, ge=0)
-    technology_dependency: str | None = None
-    security_controls: str | None = None
-    previous_incidents: int = 0
-    existing_coverage: str | None = None
-    risk_appetite: str | None = None
 
-
-class SimulateRequest(BaseModel):
+class SimulateRequest(CompanyBriefRequest, SimulationKnobs):
     """A client brief plus an optional Monte Carlo years override."""
 
-    firm_name: str | None = None
-    industry: str | None = None
-    revenue_usd: float | None = Field(default=None, gt=0.0)
-    customer_records: int | None = Field(default=None, ge=0)
-    technology_dependency: str | None = None
-    security_controls: str | None = None
-    previous_incidents: int = 0
-    existing_coverage: str | None = None
-    risk_appetite: str | None = None
-    n_years: int | None = Field(default=None, ge=1_000, le=500_000)
 
-
-class InsuranceRequest(SimulateRequest):
+class InsuranceRequest(SimulateRequest, PolicyTerms):
     """A client brief plus policy terms (defaults mirror ``PolicyInput``)."""
-
-    per_occurrence_deductible: float | None = Field(default=None, ge=0.0)
-    per_occurrence_limit: float | None = Field(default=None, ge=0.0)
-    annual_aggregate_deductible: float | None = Field(default=None, ge=0.0)
-    annual_aggregate_limit: float | None = Field(default=None, ge=0.0)
-    coinsurance: float | None = Field(default=None, ge=0.0, lt=1.0)
 
 
 class ControlImprovementRequest(SimulateRequest):
@@ -96,18 +74,8 @@ class ControlImprovementRequest(SimulateRequest):
     control_change: str
 
 
-class ReportRequest(BaseModel):
+class ReportRequest(CompanyBriefRequest):
     """A client brief plus an optional firm name for the workbook."""
-
-    firm_name: str | None = None
-    industry: str | None = None
-    revenue_usd: float | None = Field(default=None, gt=0.0)
-    customer_records: int | None = Field(default=None, ge=0)
-    technology_dependency: str | None = None
-    security_controls: str | None = None
-    previous_incidents: int = 0
-    existing_coverage: str | None = None
-    risk_appetite: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -259,16 +227,32 @@ def report(req: ReportRequest) -> dict[str, Any]:
 
 
 @router.get("/report/download")
-def report_download() -> Any:
-    """Download the most recently generated Excel workbook as a file.
+def report_download(firm: str | None = None) -> Any:
+    """Download an Excel workbook as a file.
 
-    The workbook is written to disk by ``generate_risk_report``; this route
-    streams it back with a download filename so a browser can save it.
+    Pass ``firm`` to download the report generated FOR that firm -- the only
+    unambiguous choice in a multi-tenant deployment, where "newest file in the
+    shared output dir" could hand one client another client's workbook.
+    Without ``firm`` the route falls back to the most recent workbook (the
+    single-tenant default the web UI relies on).
     """
     from fastapi.responses import FileResponse
 
     data_dir = REPO_ROOT / "data" / "output"
-    # Most recent workbook in the output dir.
+    if firm:
+        # Same on-disk name the generator wrote (see report_filename).
+        candidate = data_dir / report_filename(firm)
+        if candidate.exists():
+            return FileResponse(
+                candidate,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                filename=candidate.name,
+            )
+        raise HTTPException(
+            status_code=404,
+            detail=f"No report generated for {firm!r}. Run /api/report first.",
+        )
+    # Most recent workbook in the output dir (back-compat fallback).
     xlsx = sorted(data_dir.glob("*.xlsx"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not xlsx:
         raise HTTPException(status_code=404, detail="No report generated yet. Run /api/report first.")
@@ -291,17 +275,15 @@ def report_executive(req: ReportRequest) -> dict[str, Any]:
     brief = brief_from_request(data, firm_name=req.firm_name)
     n_years = n_years_from_request(data)
 
-    # 1. Risk score + drivers.
-    score_res = assess_company_risk(brief)
-    # 2. Monte Carlo simulation metrics + scenario contributions + mitigation
-    #    roadmap (recommended controls are model-linked in the engine).
-    sim_res = run_loss_simulation(brief, n_years=n_years)
-    if sim_res.get("status") == "insufficient_info":
-        return sim_res
-    # 3. Insurance analysis with default policy terms (current program).
-    ins_res = analyse_insurance_structure(brief, policy=None, n_years=n_years)
-    # 4. Scenario contribution detail (per-scenario AAL + recommended controls).
-    contrib = analyze_scenario_contribution(brief, n_years=n_years)
+    # The shared four-step composition (score -> simulate -> insurance ->
+    # contribution).  The mitigation roadmap reuses the scenario-contribution
+    # detail the simulation already computed, so this never re-runs the model.
+    out = compose_assessment(brief, n_years=n_years)
+    if out["status"] != "ok":
+        return out
+    score_res = out["score"]
+    sim_res = out["sim"]
+    ins_res = out["ins"]
 
     return {
         "status": "ok",
@@ -338,12 +320,9 @@ def report_executive(req: ReportRequest) -> dict[str, Any]:
             "client_retained_loss": ins_res.get("client_retained_loss"),
             "evaluation": ins_res.get("evaluation"),
         },
-        "mitigation_roadmap": contrib.get("scenarios", []) if contrib.get("status") == "ok" else [],
+        "mitigation_roadmap": mitigation_scenarios(out["contrib"]),
         "scenario_contributions": sim_res.get("scenario_contribution", {}),
-        "model_limitations": {
-            "heading": DISCLOSURE_HEADING,
-            "limitations": list(LIMITATIONS),
-        },
+        "model_limitations": model_limitations(),
     }
 
 

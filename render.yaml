@@ -1,0 +1,30 @@
+# =====================================================================
+# CyberRisk AI — Render Blueprint (infrastructure as code)
+#
+# Deploys the existing Dockerfile as a Docker-runtime web service so the
+# app is publicly reachable on a stable https URL (no laptop required).
+#
+# Two values are deliberately NOT committed:
+#   - DEEPSEEK_API_KEY   (the LLM provider secret)
+#   - CYBERRISK_API_KEY  (the bearer key that gates every /api/* route)
+# They are declared with `sync: false`; Render prompts for their values in
+# the dashboard on first deploy, and they are stored as Render secret env
+# vars (never in git, never in the image).
+# =====================================================================
+
+services:
+  - type: web
+    name: cyberrisk-ai
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: LLM_PROVIDER
+        value: deepseek
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: CYBERRISK_API_KEY
+        sync: false
+      - key: CYBERRISK_RATE_LIMIT
+        value: "60"

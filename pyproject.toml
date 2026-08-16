@@ -89,3 +89,9 @@ ignore = ["E501", "E402", "E721"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Vercel zero-config FastAPI deployment — resolves the FastAPI instance named
+# `app` in api/vc_app.py (the sys.path shim that makes the src/ layout
+# importable inside the serverless bundle).
+[tool.vercel]
+entrypoint = "api.vc_app:app"

@@ -116,9 +116,11 @@ function buildSecurityControls(c: {
 
 /**
  * Demo client — a realistic mid-market profile with strong controls so the
- * Monte Carlo run shows meaningful (non-trivial) loss numbers.
+ * Monte Carlo run shows meaningful (non-trivial) loss numbers.  Module-local:
+ * only used to pre-fill the form, and not exporting it keeps this file
+ * component-only (Fast Refresh).
  */
-export const DEMO_COMPANY: CompanyBrief = {
+const DEMO_COMPANY: CompanyBrief = {
   firm_name: 'Meridian Logistics',
   industry: 'Manufacturing',
   revenue_usd: 250_000_000,

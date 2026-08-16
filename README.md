@@ -1,529 +1,60 @@
-<div align="center">
+<p align="center">
+  <img src="docs/images/landing.png" alt="CyberRisk AI — commercial cyber risk quantification" width="840" />
+</p>
 
-# CyberRisk AI
+<h1 align="center">🛡️ CyberRisk AI</h1>
 
-**A quantitative cyber risk assessment and advisory platform — Monte Carlo loss modelling, insurance analytics, and an AI consultant, all grounded in a curated knowledge base.**
+<p align="center">
+  <b>Cyber risk, quantified.</b><br/>
+  Size your cyber exposure the way actuaries price catastrophe risk —<br/>
+  Monte Carlo loss simulation, Value-at-Risk, Expected Shortfall, then insurance that actually fits.
+</p>
 
-[Python ≥ 3.10](https://www.python.org) · [MIT License](#license--data-policy) · [Security](SECURITY.md)
-
-<!-- Landing page screenshot placeholder — see docs/images/README.md -->
-![CyberRisk AI landing page](docs/images/landing.png)
-
-</div>
-
----
-
-## Project Overview
-
-CyberRisk AI turns a company's security posture and financial profile into **defensible numbers**: expected annual loss (EAL), tail risk (VaR / Expected Shortfall), and insurance-structure outcomes. An AI consultant then explains the results in plain language a board — or an underwriter — can act on, without inventing a single figure.
-
-It is built for:
-
-- **Insurance underwriters & brokers** who need a transparent, auditable model instead of a qualitative score.
-- **Risk analysts & AI engineers** who want a reference implementation of a scenario-based cyber loss engine with full tests.
-- **Recruiters & contributors** who want to see production-grade Python: a validated numerical core, a privacy layer, a pluggable LLM layer, and 600 passing tests.
-
-> CyberRisk AI is a research and modelling platform, **not licensed financial advice**. Outputs are model estimates for analytical use, not guarantees of loss or recovery.
+<p align="center">
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg" /></a>
+  <a href="https://fastapi.tiangolo.com/"><img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688.svg" /></a>
+  <a href="https://react.dev/"><img alt="React 19" src="https://img.shields.io/badge/UI-React%2019-61DAFB.svg" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg" /></a>
+  <a href="#testing"><img alt="tests" src="https://img.shields.io/badge/tests-680%20backend%20%2B%2042%20frontend-brightgreen.svg" /></a>
+</p>
 
 ---
 
-## Key Features
+**CyberRisk AI turns a handful of facts about a company — industry, revenue,
+records held, security controls — into a board-ready, dollar-denominated cyber
+loss model.** The engine simulates your tail the way catastrophe models price
+hurricanes: thousands of scenario-driven Monte Carlo years, ranked into the
+metrics a CFO, CRO, or underwriter actually signs off on.
 
-- **Cyber risk scoring** — a deterministic 18-factor model that maps a company's security posture to a 0–100 score and a Low/Medium/High/Critical category. Every factor is weighted in `config/scoring_weights.yaml` and auditable.
-- **Loss simulation** — scenario-based Monte Carlo over real cyber scenarios (data breach, ransomware, BEC, cloud outage, business interruption, supply chain, OT/physical), each with calibrated frequency and severity.
-- **Coherent risk measures** — Expected Annual Loss, VaR at the 95/99 percentiles, Expected Shortfall (conditional tail expectation), and 1-in-100 / 1-in-1000-year PMLs.
-- **Insurance optimisation** — model a policy structure (limit, retention, sub-limits, exclusions) and see what is covered, what the insurer pays, and what the client retains — the residual gap, quantified.
-- **AI consultant** — a bounded, tool-calling agent that elicits the facts it needs, refuses to model without them, and explains the numbers in board language. The LLM **never supplies numbers**; every figure comes from the engine via tools.
-- **RAG knowledge retrieval** — a semantic search over a curated corpus (regulatory frameworks, standards, industry reports, incident data) that grounds every recommendation in citable, source-tagged chunks.
-- **Provider-agnostic LLM layer** — run the same agent on **OpenAI** or **DeepSeek** by setting `LLM_PROVIDER`; a pluggable `src/cyberrisk/llm/` interface.
-- **Privacy by design** — an input guard detects and redacts personal data before it reaches the model, and sanitised logging ensures no secret or PII is written to logs.
-- **Versioned mobile API** — a clean `/api/v1/*` JSON API for mobile clients: a multi-step assessment lifecycle (start → submit → results) reusing the same engine, agent, and RAG read-only, with typed schemas, request IDs, structured logging, and opt-in auth / rate limiting.
+> **The short version:** a healthcare firm with 10M patient records and weak
+> controls models at **EAL ≈ $3.6M/year**, a **1-in-100-year loss of $27M**
+> (VaR 99) and a **tail average of $43M** (ES 99). CyberRisk AI produces
+> exactly these numbers — then tells you what to fix and how to insure it.
 
----
-
-## Documentation
-
-- **[Architecture](docs/architecture.md)** — AI agent architecture, risk engine, Monte Carlo simulation, RAG pipeline, and the LLM layer.
-- **[Model Methodology](docs/model-methodology.md)** — how the numbers are produced: risk scoring, EAL, VaR, Expected Shortfall, insurance analysis, and the model's explicit assumptions.
-- **[Deployment](docs/deployment.md)** — local installation, Docker deployment, and the cloud deployment roadmap.
-- **[API](docs/api.md)** — the FastAPI surface: endpoints, request/response shapes, and the planned future API.
-- **[Knowledge Base](docs/knowledge-base.md)** — data sources, the RAG process, and how to add new knowledge.
+No LLM invents the figures. Every dollar is an engine output, and the AI
+consultant that walks you through the analysis is grounded in a curated,
+GDPR/HIPAA/NIST-aware knowledge base — **with no personal data ever stored.**
 
 ---
 
-## Architecture
+## Why CyberRisk AI
 
-<!-- Architecture diagram placeholder — see docs/images/README.md -->
-![CyberRisk AI architecture](docs/images/architecture.png)
-
-```
-User Input
-   │
-   ▼
-Risk Scoring ──────────────► factor scores (0–100) + risk category
-   │
-   ▼
-Frequency–Severity Model ──► per-scenario frequency (Poisson) × severity (loss distributions)
-   │
-   ▼
-Monte Carlo Simulation ────► thousands of simulated years of loss
-   │
-   ▼
-VaR / Expected Shortfall ──► EAL, VaR 95/99, ES 95/99, P99.9 tail metrics
-   │
-   ▼
-Insurance Analysis ────────► policy limits, retentions, retained vs transferred loss
-   │
-   ▼
-AI Consultant ─────────────► board-ready advice grounded in the knowledge base
-```
-
-The pipeline is **fully deterministic when seeded** — the same client profile always produces the same score, distribution, and metrics.
-
-### The AI consultant layer
-
-```
-User
-  → Chat interface (Streamlit `app.py` or terminal `run_chat.py` / `cli.py`)
-    → LLM client (`cyberrisk/llm` — OpenAI or DeepSeek via the factory)
-      → Agent controller (`agent_controller.py`) — bounded tool-calling loop
-        → CyberRisk tools (`tools.py`)
-          → Existing engine (scoring → simulate → compute_metrics
-                             → policy transform → write_report)
-            → Consultant-style response back up
-```
-
-The agent is **purely additive** — the quantitative engine is consumed read-only through the tool layer and is never modified.
-
-### Versioned mobile API tier
-
-```
-Mobile client (iOS / Android / any HTTP client)
-  → Versioned API (POST /api/v1/assessment/start | submit | GET .../results)
-    → Existing tools (assess_company_risk → run_loss_simulation
-                      → analyse_insurance_structure → scenario contribution)
-      → Existing engine (scoring, Monte Carlo, metrics, policy transform)
-      → Existing RAG + incident index (evidence / citations)
-```
-
-The mobile API never computes risk itself — it runs the existing tool layer
-read-only and returns the engine's JSON. `/api/v1/assessment/submit` returns
-the full result in one round-trip; `/api/v1/assessment/{id}/results` replays it
-for a given assessment id. Every response carries an `X-Request-ID`; errors use
-a consistent `{"error": {code, message, request_id}}` envelope. See
-`docs/api.md` for the endpoint reference.
-
----
-
-## Installation
-
-### Requirements
-
-| Requirement | Minimum |
+| Problem | How CyberRisk AI answers it |
 |---|---|
-| **Python** | **3.10 or newer** (3.11/3.12 recommended) |
-| **OS** | Windows 10/11, macOS, or Linux |
-| **Internet** | Required only for the AI consultant layer (OpenAI / DeepSeek API); the engine runs fully offline |
-
-### 1. Clone and create a virtual environment
-
-```bash
-git clone <your-repo-url> cyberrisk
-cd cyberrisk
-
-python -m venv .venv
-# Windows (PowerShell):
-.venv\Scripts\Activate.ps1
-# macOS / Linux:
-source .venv/bin/activate
-```
-
-### 2. Install the package
-
-```bash
-# Core engine + agent extras (OpenAI/DeepSeek SDK, Streamlit, dotenv):
-pip install -e ".[agent]"
-
-# Optionally add more extras — they compose:
-#   .[web]          FastAPI + Uvicorn web layer
-#   .[reporting]    Excel report generation (openpyxl, xlsxwriter)
-#   .[knowledge]    PDF/DOCX parsing for the knowledge base
-#   .[test]         Test suite (pytest)
-pip install -e ".[agent,web,reporting,knowledge,test]"
-```
-
-Verify the install:
-
-```bash
-python -c "import cyberrisk; print(cyberrisk.__version__)"   # → 0.1.0
-```
-
-### 3. Configure your LLM provider
-
-```bash
-# Windows (PowerShell):
-Copy-Item .env.example .env
-# macOS / Linux:
-cp .env.example .env
-```
-
-Open `.env` and set the provider plus your API key:
-
-```ini
-# LLM provider: "openai" or "deepseek" (defaults to whichever key is set)
-LLM_PROVIDER=deepseek
-
-# --- DeepSeek (https://platform.deepseek.com) ---
-DEEPSEEK_API_KEY=sk-your-deepseek-key-here
-
-# --- OpenAI (https://platform.openai.com) — only if LLM_PROVIDER=openai ---
-# OPENAI_API_KEY=sk-your-openai-key-here
-```
-
-The key is read at runtime via `python-dotenv` and is **never hard-coded and never committed** — `.env` is gitignored.
-
-### Switching LLM providers
-
-The consultant runs on whichever provider `LLM_PROVIDER` names. Set it in `.env` (or export it) and **restart the app** — the client is built once per agent.
-
-```ini
-# DeepSeek
-LLM_PROVIDER=deepseek
-DEEPSEEK_API_KEY=sk-...
-
-# or OpenAI
-LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-...
-```
-
-If `LLM_PROVIDER` is left blank, the provider is inferred from whichever key is present — set only `DEEPSEEK_API_KEY` and you get DeepSeek; set only `OPENAI_API_KEY` and you get OpenAI.
-
-**Provider environment variables:**
-
-| Variable | Required | Default | Notes |
-|---|---|---|---|
-| `LLM_PROVIDER` | To switch | — | `openai` or `deepseek`; inferred if unset |
-| `DEEPSEEK_API_KEY` | For DeepSeek | — | Get at https://platform.deepseek.com |
-| `DEEPSEEK_BASE_URL` | | `https://api.deepseek.com` | OpenAI-compatible endpoint |
-| `DEEPSEEK_MODEL` | | `deepseek-chat` | `deepseek-reasoner` for R1-style reasoning |
-| `OPENAI_API_KEY` | For OpenAI | — | Get at https://platform.openai.com |
-| `OPENAI_MODEL` | | `gpt-4o-mini` | Any GPT model id |
-| `OPENAI_BASE_URL` | | OpenAI default | Override for a compatible gateway |
+| "How much cyber risk do we actually carry?" | An **18-factor scoring model** (industry targeting, data sensitivity, MFA, patching, EDR, supply chain…) maps your controls to a 0–100 score. |
+| "What would a bad year cost us?" | **Monte Carlo loss simulation** — scenario frequency & severity calibrated to Verizon DBIR, IBM Cost of a Data Breach, ENISA and CISA KEV — produces EAL, **VaR 95/99** and **Expected Shortfall 95/99**. |
+| "Is our insurance actually covering the tail?" | A **policy-transfer engine** projects every simulated loss year through your limit/retention/aggregate and tells you what's retained vs. transferred. |
+| "We don't have a risk model team." | An **AI consultant** elicits the right questions, runs the tools, and explains the result in plain language — with citations. |
+| "What should we fix first?" | Every assessment ranks the **top risk drivers** and quantifies the score/curve impact of remediating each one. |
+| "Is my data safe?" | **Privacy-first by design.** No PII stored, no secrets committed, no client data on disk. Self-hostable, fully offline engine. |
 
 ---
 
-## How to Run the AI Agent
+## What it produces — a real run
 
-There are three ways to start the system. All three talk to the same engine; they differ in interface.
+Here is a **live engine run** on a representative healthcare-technology client
+(200,000 simulated years):
 
-### Streamlit chat app (recommended)
-
-```bash
-python -m streamlit run src/cyberrisk/agent/app.py
-```
-
-Open the printed URL (default `http://localhost:8501`). The sidebar shows the LLM configuration status, lets you adjust Monte Carlo simulation years, and clear the conversation.
-
-### Terminal chat (`run_chat`)
-
-```bash
-python -m cyberrisk.agent.run_chat
-```
-
-Type questions directly; `exit` or Ctrl-C to quit.
-
-### How the agent behaves
-
-The agent **elicits the facts it needs** — industry, revenue, data volume, security controls, incidents, existing coverage — asking follow-up questions until it can model. It **refuses to model on insufficient information** rather than guessing. Once it has the facts, it runs the quantitative engine as tools and reports score, risk category, EAL, VaR, Expected Shortfall, and insurance structuring, grounded in the knowledge base.
-
-**Example questions to try:**
-
-| Question | What the agent does |
-|---|---|
-| "Assess a healthcare technology company with 10 million patient records, weak MFA and limited network segmentation." | Asks for revenue if missing, then scores and runs the model. Expect High/Critical rating, ransomware + business-interruption as top drivers, a fat tail, and an insurance-gap warning. |
-| "We're a $500M manufacturer. What cyber insurance limit and retention should we buy?" | Models the exposure, tests a structure via `analyse_insurance_structure`, and recommends a limit/retention with the gap quantified. |
-| "How exposed are we to ransomware? What's our worst-case 1-in-1000-year loss?" | Runs the simulation and quotes EAL, scenario AAL, and the 1-in-1000 PML. |
-| "Explain VaR 95 versus Expected Shortfall in plain English for our board." | A conversational explanation grounded in the modelled numbers. |
-| "We have no security controls and store a lot of customer data." | The agent asks for revenue and specifics before modelling — it will not guess a profile. |
-
-**Why the numbers are trustworthy:** the system prompt forbids inventing figures, the tools are the **only** source of numbers, and a completeness guard blocks assumed profiles. An existing hallucination check (`src/agent/safety.py`) acts as a backstop on the final answer.
-
----
-
-## CLI Usage
-
-The global `cyberrisk` launcher gives you a system-status screen and an interactive consultant prompt:
-
-```bash
-cyberrisk                       # or: python -m cyberrisk.cli
-```
-
-```
-==================================================
-CyberRisk AI Consultant
-Commercial Cyber Risk Advisory Platform
-==================================================
-
-System Status:
-  ✓ Risk Engine
-  ✓ Knowledge Base
-  ✓ Retrieval System
-  ✓ LLM Connection
-Ready.
-
-Type 'exit', 'quit', or 'help'. Ctrl-C to leave.
-
->
-```
-
-Each check reports whether the engine, knowledge base, retrieval system, and LLM connection are operational. Inside the prompt you can use `exit` / `quit` / `help` / `clear`.
-
----
-
-## Web Application Usage
-
-The web app has a **React frontend** and a **FastAPI backend** (which also serves the built frontend).
-
-### Production / single-process mode
-
-```bash
-pip install -e ".[web]"
-
-# Start the API + built frontend on http://localhost:8000
-python -m uvicorn cyberrisk.api.main:app --port 8000
-```
-
-Open <http://localhost:8000> — the UI is served from `app/frontend/dist`, and interactive API docs live at <http://localhost:8000/docs>.
-
-## Docker Installation
-
-The repo ships a `Dockerfile`, `docker-compose.yml`, and `.dockerignore` for a
-single-container deployment that serves **everything** from one process on
-port `8000`:
-
-1. **AI agent backend** — the FastAPI `/api/*` routes plus the tool-calling
-   consultant agent (`cyberrisk.agent`).
-2. **Risk calculation engine** — Monte Carlo simulation, risk scoring, and
-   metrics, running fully inside the container.
-3. **RAG knowledge retrieval** — the SQLite vector store
-   (`knowledge/derived/vector.db`) and the offline `HashEmbedder` — no
-   external vector database is required.
-4. **Web application** — the built React SPA is served statically by the same
-   uvicorn process.
-5. **Environment variable configuration** — all settings and secrets are
-   injected at runtime from `.env`; nothing is hard-coded or baked in.
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) with the Compose plugin
-  (`docker compose version`). Docker Desktop on Windows/macOS includes it.
-- A copy of `.env` configured with your LLM provider (see
-  [Environment configuration](#environment-configuration)).
-
-### Build the image
-
-```bash
-# From the repository root
-docker build -t cyberrisk:latest .
-```
-
-The image is built in three stages:
-
-| Stage | Base | Builds |
-|---|---|---|
-| `backend` | `python:3.12-slim` | The `cyberrisk` package (engine + agent + API) with system deps for PDF/DOCX parsing (`poppler-utils`) |
-| `frontend` | `node:20-alpine` | The React SPA (`npm ci && npm run build`) |
-| `runtime` | `backend` | The final image: backend + built SPA, non-root user, healthcheck |
-
-No secrets are needed to build the image — API keys are only ever injected at
-runtime.
-
-### Start the application
-
-```bash
-# 1. Configure your LLM provider (once)
-cp .env.example .env        # set LLM_PROVIDER + OPENAI_API_KEY / DEEPSEEK_API_KEY
-
-# 2. Build (if needed) and start
-docker compose up --build
-```
-
-### Access the application
-
-| URL | What you get |
-|---|---|
-| <http://localhost:8000> | The web application (React UI + API, same origin) |
-| <http://localhost:8000/docs> | Interactive API documentation (Swagger UI) |
-
-The container runs as a non-root user and health-checks `/api/health`.
-Check status with `docker compose ps`, follow logs with `docker compose logs
--f`, and stop with `docker compose down` (add `-v` to also drop named
-volumes).
-
-### Versioned mobile API
-
-The `/api/v1/*` routes are served by the same `cyberrisk` process — no extra
-container. A mobile client runs an assessment in one round-trip:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/assessment/submit \
-  -H "Content-Type: application/json" \
-  -d '{"firm_name":"Acme","industry":"Healthcare","revenue_usd":400000000,
-       "customer_records":10000000,"technology_dependency":"High",
-       "security_controls":"MFA partial, weekly backups, weak segmentation"}'
-```
-
-The response carries `assessment_id`, `status`, and the full `result`
-(risk score, EAL, VaR/ES, PML, insurance analysis, mitigation
-recommendations, model limitations, evidence/citations). See `docs/api.md`.
-
-### Configuration & secrets
-
-- Copy `.env.example` to `.env` and set your provider and key. `.env` is
-  **gitignored and `.dockerignore`d** — it is never copied into the image and
-  is injected only via `env_file` at runtime.
-- Supported variables are listed in the
-  [provider table above](#switching-llm-providers); optional API hardening
-  (`CYBERRISK_API_KEY`, `CYBERRISK_RATE_LIMIT`) is documented in
-  [docs/api.md §4](docs/api.md).
-- The engine runs fully offline. Only the AI consultant layer needs an LLM
-  API key.
-
-### Volumes
-
-`docker-compose.yml` bind-mounts these host paths into the container:
-
-| Host path | Container path | Mode |
-|---|---|---|
-| `knowledge/corpus` | `/app/knowledge/corpus` | read-only |
-| `knowledge/manifests` | `/app/knowledge/manifests` | read-only |
-| `knowledge/derived` | `/app/knowledge/derived` | read-only (vector index) |
-| `data/output` | `/app/data/output` | read-write (generated reports) |
-
-Re-running `python -m cyberrisk.knowledge.update` on the host refreshes the
-vector index in `knowledge/derived/vector.db`, which the container picks up on
-restart — no image rebuild needed.
-
-### Validate the Docker deployment
-
-A self-contained validation suite checks that the image builds, the container
-starts, the API responds, the agent loads, the engine runs, RAG retrieval
-works, and env vars load correctly:
-
-```powershell
-# Windows (PowerShell)
-.\docker\validate\validate.ps1
-
-# macOS / Linux
-bash docker/validate/validate.sh
-```
-
-Each check prints `[PASS]`/`[FAIL]`; the runner exits nonzero on failure so it
-drops straight into CI. See [Deployment §2.4](docs/deployment.md#24-validating-the-deployment)
-for details and example output.
-
-See [Deployment](docs/deployment.md) for the full architecture, the cloud
-roadmap, and troubleshooting.
-
-### Development mode (live-reloading)
-
-```bash
-# Terminal 1 — FastAPI backend on :8000
-python -m uvicorn cyberrisk.api.main:app --port 8000 --reload
-
-# Terminal 2 — Vite dev server on :5173 (proxies /api → :8000)
-cd app/frontend
-npm ci        # exact install from the committed package-lock.json
-npm run dev
-```
-
-Open <http://localhost:5173>. The Vite dev server proxies `/api` calls to the backend (`app/frontend/vite.config.ts`), so both must be running.
-
-> **Frontend dependencies:** `app/frontend/package-lock.json` is committed and
-> locks against the default npm registry (`registry.npmjs.org`) so installs are
-> reproducible on any machine and in CI. The project `.npmrc` intentionally
-> does **not** pin a mirror — a mirror that is unreachable in CI would break
-> `npm ci` inside the Docker image. Developers behind slow links may override
-> the registry per-machine (`npm config set registry ...`); do not commit that
-> override.
-
-### Python API usage
-
-The engine and agent are plain Python modules, so you can drive them programmatically — in notebooks, scripts, or your own service.
-
-**Engine-only (no API key, fully offline):**
-
-```python
-from pathlib import Path
-from cyberrisk.calibration import load_config
-from cyberrisk.metrics import compute_metrics
-from cyberrisk.scoring import CompanyProfile, compute_score
-from cyberrisk.simulation import simulate
-
-cfg = load_config(
-    Path("config/scenarios.yaml"),
-    Path("config/simulation_config.yaml"),
-)
-
-profile = CompanyProfile(
-    firm_name="Acme Manufacturing",
-    revenue_usd=500_000_000,
-    factor_scores={
-        "external_attack_surface": 70.0,
-        "mfa_coverage": 60.0,
-        # ... 18 factors, each 0-100 (see examples/run_full_pipeline.py)
-    },
-)
-
-scored = compute_score(profile)
-metrics = compute_metrics(
-    simulate(cfg, n_years=100_000, score=scored.composite_score)
-)
-
-print(f"{scored.firm_name}: {scored.composite_score:.1f}/100 ({scored.risk_category})")
-print(f"EAL:  ${metrics.eal/1e6:,.2f}M")
-print(f"VaR99: ${metrics.var_99/1e6:,.2f}M")
-print(f"ES99:  ${metrics.es_99/1e6:,.2f}M")
-```
-
-**AI consultant (requires the active provider's API key):**
-
-```python
-from cyberrisk.agent.agent_controller import CyberRiskAgent
-
-agent = CyberRiskAgent()                      # provider from LLM_PROVIDER env
-answer = agent.chat(
-    "Assess a $400M healthcare technology firm holding 10M patient records "
-    "with partial MFA and weekly backups."
-)
-print(answer)
-```
-
-**Web-layer tools (the same functions the FastAPI routes wrap):**
-
-```python
-from cyberrisk.agent.tools import assess_company_risk
-from cyberrisk.agent.schemas import CompanyBrief
-
-result = assess_company_risk(CompanyBrief(
-    firm_name="MedData Health Technologies",
-    industry="Healthcare",
-    revenue_usd=400_000_000,
-    customer_records=10_000_000,
-    security_controls="partial MFA, weekly backups, onboarding-only vendor assessment",
-))
-# result contains score, risk category, EAL/VaR/ES, and the top risk drivers
-```
-
-> The full end-to-end pipeline example (score → simulate → insurance → Excel report → rule-based recommendation) is `python examples/run_full_pipeline.py`.
-
----
-
-## Example Cyber Risk Assessment
-
-Here is a **live engine run** on a representative healthcare technology company (200,000 simulated years):
-
-<!-- Risk assessment output screenshot placeholder — see docs/images/README.md -->
 ![CyberRisk AI risk assessment output](docs/images/risk-assessment-output.png)
 
 **Client profile — "MedData Health Technologies"**
@@ -536,7 +67,7 @@ Here is a **live engine run** on a representative healthcare technology company 
 | Industry targeting | Very high |
 | MFA coverage | Partial (~50–70% of users) |
 | Backups | Weekly, DR tested annually |
-| Third-party exposure | High — onboarding-only vendor assessment, minimal contractual security, limited supply-chain visibility |
+| Third-party exposure | High — onboarding-only vendor assessment, minimal contractual security |
 | Patching | Ad hoc, high number of open critical vulnerabilities |
 | Prior incidents | None disclosed |
 
@@ -562,227 +93,394 @@ Transferred EAL: $1.87M
 P(within aggregate limit): 99.7%
 ```
 
-**What these numbers mean:**
+**What those numbers mean:**
 
 | Metric | Value | Interpretation |
 |---|---|---|
-| **Risk score** | 73.4 / 100 | **High** risk band. Worst drivers: healthcare is heavily targeted, data sensitivity is critical (10M records), and patching/privileged-access/EDR controls are weak. |
-| **EAL** | $3.62M | Expected **annual** loss from cyber events. The headline number for pricing. |
+| **Risk score** | 73.4 / 100 | **High** risk band. Healthcare is heavily targeted, data sensitivity is critical (10M records), and patching/privileged-access/EDR are weak. |
+| **EAL** | $3.62M | Expected **annual** loss from cyber events — the headline number for budgeting and pricing. |
 | **VaR 99** | $27.42M | The loss exceeded with 1% probability in any year — the 1-in-100-year event. |
-| **ES 99** | $42.71M | Average loss **in the worst 1% of years** (Expected Shortfall, conditional tail expectation). The number that matters for capital and reinsurance. |
+| **ES 99** | $42.71M | Average loss **in the worst 1% of years** — the figure that matters for capital and reinsurance. |
 | **P(no loss)** | 10.2% | The firm loses money in ~90% of modelled years — consistent with a High risk category. |
-| **Retained vs transferred EAL** | $1.75M / $1.87M | With the tested structure, the client retains roughly half the expected annual loss and the insurer pays half. |
-| **P(within aggregate limit)** | 99.7% | The $25M aggregate limit would absorb the policy's annual transfers in 99.7% of years — a broadly adequate structure, though the $1M aggregate deductible still leaves meaningful retained risk. |
+| **Retained vs transferred** | $1.75M / $1.87M | With the tested structure the client retains roughly half the expected annual loss; the insurer pays half. |
+| **P(within aggregate)** | 99.7% | The $25M aggregate would absorb the policy's transfers in 99.7% of years — broadly adequate, but the $1M aggregate deductible still leaves meaningful retained risk. |
 
-**Insurance recommendation (as the consultant would frame it):** the firm's tail exposure (ES99 $42.7M, far above the $10M per-occurrence limit) makes the current structure leave the tail largely uninsured. A board-facing recommendation would be to (a) raise the occurrence limit toward the P99.9 tail, (b) remediate the top risk drivers — particularly patch cadence, privileged-access controls, and vendor security — which move the score and the whole loss distribution, and (c) reassess retention given the 90%-annual probability of at least one loss event.
+**What the consultant would tell the board:** the tail exposure (ES99
+$42.7M vs. a $10M per-occurrence limit) is largely **uninsured**. The move is
+(a) raise the occurrence limit toward the P99.9 tail, (b) remediate the top
+drivers — patch cadence, privileged access, vendor security — which move the
+score and the entire loss distribution, and (c) revisit retention given a
+~90% annual probability of at least one loss event.
 
-> These figures are a live engine run on the profile above; they are illustrative of a worked example, not a quote or a guarantee. Run the example yourself for your own profile.
+> These figures are a live engine run on the profile above — illustrative of a
+> worked example, not a quote or guarantee. Reproduce them yourself:
+> `python examples/run_full_pipeline.py`.
 
 ---
 
-## Knowledge Base
+## Key features
 
-The AI consultant's recommendations are grounded in a curated corpus that you can extend with **no code changes** — content is data, never code.
+1. **Actuarial-grade scoring** — an 18-factor model that turns qualitative
+   security posture into a calibrated 0–100 score with named risk drivers.
+2. **Monte Carlo tail analysis** — scenario-based frequency/severity
+   simulation producing **EAL, VaR 95/99, Expected Shortfall 95/99 and PML**,
+   calibrated to industry-standard benchmark data.
+3. **AI risk consultant** — a tool-calling LLM agent (DeepSeek or OpenAI) that
+   elicits missing facts, runs the engine, and writes board-ready advice with
+   citations. **It asks before it models — it never guesses.**
+4. **Insurance structuring** — project simulated losses through any
+   limit/retention/aggregate structure and read out retained vs. transferred
+   EAL and probability of exhausting the policy.
+5. **RAG-grounded knowledge base** — recommendations cite a curated corpus
+   (NIST CSF 2.0, ISO 27001, GDPR, DORA, NIS2, DBIR…) that you extend with
+   **zero code changes** — content is data, never code.
+6. **Privacy-first by design** — no personal data stored, an input-privacy
+   guard redacts PII before it reaches the model, and no client data is
+   written to disk. The repo ships source + synthetic examples only.
+7. **Model-validation suite** — a dedicated sub-suite (`tests/validate/`)
+   proves the engine's properties (non-negative losses, calibrated
+   percentiles) hold, not just that functions run.
+8. **One process, two surfaces** — a FastAPI backend serving both the `/api`
+   routes and the React SPA, so the web UI, the AI consultant and the mobile
+   voice client all share the same engine.
+9. **Versioned mobile API** — a mobile client runs a full assessment in **one
+   round-trip** via `/api/v1` (score, EAL/VaR/ES, insurance, citations).
+10. **Deploy anywhere** — Docker, Render, or Vercel, from a single
+    multi-stage Dockerfile that builds the RAG index at build time.
+
+---
+
+## How it works
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  The CyberRisk AI pipeline                                             │
+│                                                                         │
+│  Client brief ──► 1. Score     18-factor risk score (0–100)            │
+│                     │            + named risk drivers                   │
+│                     ▼                                                  │
+│                 2. Simulate   Monte Carlo frequency × severity          │
+│                     │            over N years (seeded, reproducible)    │
+│                     ▼                                                  │
+│                 3. Metrics    EAL · VaR 95/99 · ES 95/99 · PML          │
+│                     │            P(no loss)                             │
+│                     ▼                                                  │
+│                 4. Insure     project losses through the policy         │
+│                                structure → retained vs transferred      │
+│                                                                         │
+│   The AI consultant wraps 1–4 as tools, grounded in the RAG knowledge   │
+│   base, and writes the analysis in plain language with citations.       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+The engine is deliberately deterministic and auditable: scenario
+probabilities are seeded, every figure traces to a calibration table, and the
+hallucination guard verifies that any claim the consultant makes traces to
+either a tool metric or a retrieved chunk. See [Model Methodology](docs/model-methodology.md)
+and [Architecture](docs/architecture.md).
+
+---
+
+## Try it in five minutes
+
+**Requirements:** Python 3.10+ (or Docker).
+
+### Option A — Python (no container)
+
+```bash
+# 1. Create a virtualenv and install
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -e ".[web,agent,knowledge]"
+
+# 2. (Optional) configure an LLM for the AI consultant
+cp .env.example .env                  # set LLM_PROVIDER + DEEPSEEK_API_KEY / OPENAI_API_KEY
+
+# 3. Run the quantitative engine end-to-end — no API key needed
+python examples/run_full_pipeline.py
+
+# 4. Or start the web app
+python -m uvicorn cyberrisk.api.main:app --port 8000
+open http://localhost:8000            # web UI · /docs = interactive API docs
+```
+
+> The **risk engine is fully offline** — only the AI consultant layer needs an
+> LLM API key. Try the engine first; add the consultant when you want it.
+
+### Option B — Docker (everything included)
+
+```bash
+cp .env.example .env                  # set your LLM keys
+docker compose up --build
+open http://localhost:8000
+```
+
+The container runs as a non-root user with a health check, and the
+multi-stage build produces the RAG vector index from the committed corpus at
+build time. Validate the full deployment in CI with
+`docker/validate/validate.sh` (macOS/Linux) or `docker/validate/validate.ps1`
+(Windows).
+
+---
+
+## The AI consultant
+
+The consultant is a tool-calling LLM agent that acts like a senior cyber risk
+advisor:
+
+1. **Elicits** the facts it needs — it asks targeted follow-ups rather than
+   modelling on guesses (partial data → `insufficient_info` with a list of
+   what's missing).
+2. **Runs the engine** — scoring, Monte Carlo, insurance structuring — through
+   the same tools the API exposes.
+3. **Writes the answer** — Marsh/Aon-style advice in plain language, with the
+   quantitative outputs, citations, and model limitations disclosed.
+
+**Provider-agnostic.** Switch between DeepSeek and OpenAI via one env var:
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `LLM_PROVIDER` | Provider to use (`deepseek` / `openai`) | `deepseek` |
+| `DEEPSEEK_API_KEY` | Key for the DeepSeek provider | `sk-...` |
+| `DEEPSEEK_MODEL` | Model name (default `deepseek-chat`) | `deepseek-chat` |
+| `OPENAI_API_KEY` | Key for the OpenAI provider | `sk-...` |
+| `OPENAI_MODEL` | Model name (default `gpt-4o-mini`) | `gpt-4o-mini` |
+| `CYBERRISK_API_KEY` | *Optional* bearer key gating every `/api/*` route | `openssl rand -hex 32` |
+| `CYBERRISK_RATE_LIMIT` | *Optional* requests/minute per client (0 = off) | `60` |
+
+Use it programmatically in one line:
+
+```python
+from cyberrisk.agent.agent_controller import CyberRiskAgent
+
+agent = CyberRiskAgent()                    # provider from LLM_PROVIDER env
+answer = agent.chat(
+    "Assess a $400M healthcare technology firm holding 10M patient records "
+    "with partial MFA and weekly backups."
+)
+print(answer)
+```
+
+---
+
+## Python API
+
+The engine and agent are plain Python modules — drive them from notebooks,
+scripts, or your own service.
+
+**Engine-only (no API key, fully offline):**
+
+```python
+from pathlib import Path
+from cyberrisk.calibration import load_config
+from cyberrisk.metrics import compute_metrics
+from cyberrisk.scoring import CompanyProfile, compute_score
+from cyberrisk.simulation import simulate
+
+cfg = load_config(Path("config/scenarios.yaml"), Path("config/simulation_config.yaml"))
+
+profile = CompanyProfile(
+    firm_name="Acme Manufacturing",
+    revenue_usd=500_000_000,
+    factor_scores={"external_attack_surface": 70.0, "mfa_coverage": 60.0},
+)
+
+scored = compute_score(profile)
+metrics = compute_metrics(simulate(cfg, n_years=100_000, score=scored.composite_score))
+
+print(f"{scored.firm_name}: {scored.composite_score:.1f}/100 ({scored.risk_category})")
+print(f"EAL:   ${metrics.eal/1e6:,.2f}M")
+print(f"VaR99: ${metrics.var_99/1e6:,.2f}M")
+print(f"ES99:  ${metrics.es_99/1e6:,.2f}M")
+```
+
+**Web-layer tools (the same functions the API routes wrap):**
+
+```python
+from cyberrisk.agent.tools import assess_company_risk
+from cyberrisk.agent.schemas import CompanyBrief
+
+result = assess_company_risk(CompanyBrief(
+    firm_name="MedData Health Technologies",
+    industry="Healthcare",
+    revenue_usd=400_000_000,
+    customer_records=10_000_000,
+    security_controls="partial MFA, weekly backups",
+))
+# score, risk category, EAL/VaR/ES, and the top risk drivers
+```
+
+---
+
+## The web app
+
+A single FastAPI process serves both the API and the React SPA.
+
+**Development mode (live-reload):**
+
+```bash
+# Terminal 1 — FastAPI backend on :8000
+python -m uvicorn cyberrisk.api.main:app --port 8000 --reload
+
+# Terminal 2 — Vite dev server on :5173 (proxies /api → :8000)
+cd app/frontend && npm ci && npm run dev
+```
+
+Open <http://localhost:5173>. In production, `npm run build` emits the SPA
+into `app/frontend/dist`, which FastAPI serves with an SPA fallback — one
+origin for everything.
+
+**Versioned mobile API** — a mobile client (including the iOS voice PWA at
+`/voice.html`) runs a full assessment in one round-trip:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/assessment/submit \
+  -H "Content-Type: application/json" \
+  -d '{"firm_name":"Acme","industry":"Healthcare","revenue_usd":400000000,
+       "customer_records":10000000,"technology_dependency":"High",
+       "security_controls":"MFA partial, weekly backups, weak segmentation"}'
+```
+
+The response carries `assessment_id`, `status`, and the full `result` —
+risk score, EAL, VaR/ES, PML, insurance analysis, mitigation recommendations,
+model limitations, and evidence/citations. Full route reference:
+[docs/api.md](docs/api.md).
+
+---
+
+## The knowledge base
+
+The consultant's recommendations are grounded in a curated corpus that you
+extend with **no code changes** — content is data, never code:
 
 ```
 knowledge/
-├── corpus/                  # source documents you curate (the "what the AI knows")
+├── corpus/                  # source documents you curate
 │   ├── incidents/           #   breach/incident case data
-│   ├── industry-reports/    #   DBIR, IBM CODB, ENISA, Hiscox, NetDiligence...
+│   ├── industry-reports/    #   DBIR, IBM CODB, ENISA, Hiscox, NetDiligence…
 │   ├── insurance/           #   wordings, claims guides, market terms
-│   ├── regulatory/          #   GDPR, HIPAA, NIS2, DORA, AI Act, SEC...
-│   ├── standards/           #   NIST CSF 2.0, NIST 800-53, ISO 27001, CIS...
+│   ├── regulatory/          #   GDPR, HIPAA, NIS2, DORA, AI Act, SEC…
+│   ├── standards/           #   NIST CSF 2.0, NIST 800-53, ISO 27001, CIS…
 │   ├── threat-intel/        #   threat landscape reports
 │   └── vulnerability-data/  #   CISA KEV, CVE data
 ├── datasets/                # structured calibration data (CSV/JSON)
-│   ├── benchmarks/          #   DBIR frequency, IBM CODB severity tables
-│   ├── history/             #   historical incident series
-│   └── market/              #   market-level pricing data
 ├── manifests/               # corpus_manifest.yaml (registered documents)
-├── mappings/                # taxonomy + source mappings
-├── pipelines/               # ingest/embed/refresh pipeline config
-├── schemas/                 # JSON schemas for documents and the manifest
-└── derived/                 # generated chunks, embeddings, vector.db (gitignored)
+└── derived/                 # chunks, embeddings, vector.db (gitignored)
 ```
 
-**Supported formats:** PDF, Markdown, DOCX, HTML, plain text, and YAML — see `src/cyberrisk/knowledge/config.py`.
-
-### Adding knowledge
-
-Drop a document into the relevant corpus folder, then run the auto-update pipeline — it detects, parses, chunks, embeds, and updates the vector store in one pass:
+**Add a document and it just works:**
 
 ```bash
-# 1. Drop your document into a corpus folder, e.g.
-#    knowledge/corpus/standards/nist-csf-2.0/my_note.pdf
-
-# 2. Run the automatic update pipeline
+# 1. Drop a PDF/Markdown/DOCX/HTML/YAML into a corpus folder
+# 2. Run the pipeline — it scans, parses, chunks, embeds, and updates the index
 python -m cyberrisk.knowledge.update
-
-# Useful flags:
-python -m cyberrisk.knowledge.update --force    # re-index everything (ignore cache)
-python -m cyberrisk.knowledge.update --report   # print the last update report
+python -m cyberrisk.knowledge.update --force   # re-index everything
 ```
 
-What the pipeline does, automatically:
-
-1. **Scans** `knowledge/corpus/**` for supported files not already in the manifest.
-2. **Registers** each new file with metadata inferred from its path (domain, title, license, content hash).
-3. **Extracts** text, **cleans** it, and **chunks** it (section-aware or plain, per config).
-4. **Embeds** the chunks (content-hash deduplication avoids re-embedding).
-5. **Updates** the SQLite vector store (`knowledge/derived/vector.db`).
-6. **Logs** every action to `knowledge/derived/update/` and writes a report.
-
-**Quality gate.** The authoritative population path (`python -m cyberrisk.knowledge.populate`) only ingests documents whose source is registered as **approved** in the source registry (`authoritative_sources.yaml`). The auto-update path is the permissive one for your own documents.
-
-**Duplicates.** Content-hash dedup means re-running the update is safe: unchanged files are skipped, changed files are re-ingested, and the vector store is updated incrementally.
-
-> **Licensing.** The repo is source code + curated example data only. If you add proprietary licensed corpora (e.g. paid DBIR/CODB content), keep them out of version control and store the files locally under `knowledge/corpus/` — licensed source text should be held behind your own access controls.
+Content-hash deduplication makes re-runs safe; a quality gate
+(`knowledge.populate`) only ingests documents registered as **approved** in
+the source registry. See [Knowledge Base](docs/knowledge-base.md).
 
 ---
 
-## Supported Data Sources
+## Deploy
 
-The frequency–severity calibration and the curated corpus are built from public, industry-standard sources:
+Three supported paths, all from the same codebase:
 
-- **Verizon DBIR** (Data Breach Investigations Report) — sector breach frequency
-- **IBM Cost of a Data Breach Report** — loss severity tables
-- **ENISA Threat Landscape** — threat landscape reports
-- **NIST publications** — frameworks and standards
-- **CISA KEV** — known exploited vulnerabilities
-- **Hiscox / NetDiligence** — cyber insurance market data
+### Docker (any host)
+```bash
+docker compose up --build
+```
+The image bakes the RAG vector index from the committed corpus, runs as a
+non-root user, and health-checks `/api/health`.
 
-These feed the calibration tables in `knowledge/datasets/benchmarks/` and the curated corpus that grounds the AI consultant's reasoning. Public benchmark datasets are referenced **by calibration table, not bundled** — see the licensing note above.
+### Render (free tier, no laptop needed)
+The repo ships a [Render Blueprint](render.yaml) — import the repo, set
+`DEEPSEEK_API_KEY` and `CYBERRISK_API_KEY`, deploy. The iOS voice PWA is
+reachable at `https://<app>.onrender.com/voice.html` from any WiFi.
+Details in [docs/deployment.md](docs/deployment.md).
 
----
+### Vercel (serverless)
+The repo ships a zero-config FastAPI deployment (`vercel.json`, `api/vc_app.py`):
 
-## Data Required to Improve Model Accuracy
+```bash
+npm i -g vercel && vercel deploy --prod
+```
 
-CyberRisk AI's estimates are only as good as the information it is given. Like any actuarial model, the platform quantifies risk from the facts supplied to it — and the quality and completeness of those facts directly bound the precision of its outputs. The agent is designed to elicit and work with partial information — it **asks before it models** rather than guessing.
-
-### 1. Company profile information
-
-- Industry sector, company size, annual revenue
-- Geographic footprint, number of employees, number of customers
-- Business criticality, digital dependency
-
-**Why it matters:** Industry and business characteristics influence baseline cyber threat frequency. A financial institution is targeted more often than a regional manufacturer; a company that runs its business on cloud infrastructure has a different exposure profile from one that operates on-premises. Industry and targeting feed the scenario frequency calibration, while revenue scales the severity distribution.
-
-### 2. Data asset information
-
-- Number of records held
-- Types of sensitive data (personal, healthcare, financial, IP)
-- Data classification, storage locations, cloud usage
-
-**Why it matters:** Data sensitivity drives breach severity and regulatory exposure. 10 million healthcare records produces a materially different loss profile from 10,000 marketing contacts. Sensitive categories carry higher regulatory and notification costs (HIPAA, GDPR, state privacy laws).
-
-### 3. Cybersecurity control information
-
-Precise, quantified answers are best — *"65% MFA coverage"*, *"immutable backups, RTO 4 hours"* — rather than a single word such as "good" or "weak".
-
-- **Identity & access:** MFA coverage %, privileged access management, SSO, identity governance
-- **Network:** segmentation, firewall maturity, Zero Trust implementation
-- **Endpoint:** EDR deployment, patch management, vulnerability scanning
-- **Resilience:** backup frequency, immutable backups, DR testing, RTO
-
-**Why it matters:** Controls influence both the probability and severity of cyber incidents. They feed the 18-factor scoring model, and through the score, the simulated frequency and severity of each scenario.
-
-### 4. Third-party and supply chain risk
-
-- Number of suppliers, critical vendors, cloud providers, software dependencies
-- Third-party security assessments, contractual cyber requirements
-
-**Why it matters:** Supply chain compromise is a major driver of modern cyber losses. The model treats third-party exposure as a distinct scenario and incorporates vendor-assessment practices and contractual security obligations directly into the risk score.
-
-### 5. Historical incident data
-
-- Previous cyber incidents, breach history, ransomware and downtime events
-- Previous insurance claims and loss amounts
-
-**Why it matters:** CyberRisk AI applies a **credibility-weighted calibration**: it starts from the industry baseline, then shifts frequency and severity toward your own observed experience the more of it you provide — while never discarding the sector prior entirely. A firm with a clean record receives a better-than-average modelled rate, and a firm with a troubled record a worse one, each fully auditable.
-
-### 6. Insurance information
-
-- Current limit, retention/deductible, policy structure, coverage sections
-- Sublimits, exclusions, claims history
-
-**Why it matters:** The insurance module requires accurate policy terms to estimate retained and transferred risk. It projects each simulated year of loss through the policy structure to calculate what the client retains versus what the insurer pays.
-
-### Data quality guidance
-
-| Information | Impact on Accuracy |
-|---|---|
-| High-quality security control data | Improves frequency modelling |
-| Historical loss data | Improves severity calibration |
-| Industry benchmarks | Improves baseline assumptions |
-| Insurance policy details | Improves coverage analysis |
-| Incomplete information | Increases uncertainty |
-
-> **A note on model output.** CyberRisk AI produces probabilistic risk estimates, not guaranteed predictions. Better-quality input data reduces uncertainty and improves the reliability of risk quantification.
+Set `LLM_PROVIDER=deepseek` and `DEEPSEEK_API_KEY` (plus `CYBERRISK_API_KEY`
+to gate the API) in the project's **Environment Variables**. The build command
+compiles the React SPA, Vercel promotes the FastAPI static mount to the CDN,
+and `/api/*` + unknown client-side routes fall through to the serverless
+function.
 
 ---
 
-## Privacy and Security
+## Privacy & security
 
-CyberRisk AI is designed so that **no personal information is stored** and the repository is safe to publish publicly.
+CyberRisk AI is designed so that **no personal information is stored** and the
+repository is safe to publish publicly.
 
-**What the platform does not store:**
+- **No personal information.** The input-privacy guard detects and redacts
+  personal data (names, emails, phones, addresses) before it reaches the model.
+- **No client-identifiable data on disk.** Conversations and firm facts live
+  in memory for the session; persisting scrubs personal data first
+  (`config/privacy.yaml`).
+- **No private datasets.** The repo ships source code, docs, and **synthetic
+  example data only**. Secrets are read from environment / a gitignored
+  `.env`, never committed. A security scanner
+  ([`scripts/security_scan.py`](scripts/security_scan.py)) and pre-commit hooks
+  enforce this.
+- **All examples are synthetic.** No real company is represented.
 
-- **No personal information.** The input-privacy guard detects and redacts personal data (names, emails, phone numbers, addresses) before it reaches the model ([`src/cyberrisk/privacy.py`](src/cyberrisk/privacy.py)).
-- **No client-identifiable data on disk.** Client conversations and firm facts live in memory for the duration of a session; they are not written to persistent storage by default. Persisting a conversation scrubs personal data first (see `config/privacy.yaml`).
-- **No private datasets.** The repository ships source code, documentation, and **synthetic example data only**. Licensed or client-confidential corpora must be sourced and held outside version control by the operator.
-
-**Your responsibilities:**
-
-- **Do not upload confidential client information** into the repository, issues, or discussions.
-- **API credentials are yours, stored locally.** All secrets are read from environment variables or a local `.env` file (gitignored). Never commit a key. See [`SECURITY.md`](SECURITY.md).
-- **All examples are synthetic.** The example companies and datasets (`examples/`, `data/examples/`, `config/benchmark_profiles.yaml`) are fictional. No real company is represented.
-
-**The repository contains no private datasets and no secrets.** The `.gitignore` blocks `.env`, private keys, raw/private/client data directories, generated reports, and local databases. A security scanner ([`scripts/security_scan.py`](scripts/security_scan.py)) and pre-commit hooks ([`.pre-commit-config.yaml`](.pre-commit-config.yaml)) enforce this before anything is committed.
-
-See [`SECURITY.md`](SECURITY.md) for the full security policy, vulnerability reporting, and data-protection statement.
+See [`SECURITY.md`](SECURITY.md) for the full security policy and
+vulnerability reporting.
 
 ---
 
 ## Testing
 
 ```bash
-# Deterministic agent tests (no API key needed)
-python -m pytest tests/test_agent_tools.py tests/test_agent_controller.py tests/test_agent_scenario.py tests/test_agent_deepseek_client.py -v
-
-# Full suite (engine + agent + knowledge + validation)
+# Backend — 680 tests (engine + agent + knowledge + model validation)
 python -m pytest -q
+
+# Frontend — 42 tests (chat shell, transcript, components)
+cd app/frontend && npm test
 ```
 
-The full suite is **600 tests**, including a model-validation sub-suite (`tests/validate/`). A live API round-trip test runs only when a provider key is set.
+The full suite includes a dedicated model-validation sub-suite
+(`tests/validate/`) that asserts the engine's mathematical properties hold —
+calibrated percentiles, non-negative losses, policy-transfer accounting — not
+just that the functions run. The deterministic agent tests need no API key.
 
 ---
 
-## Future Roadmap
+## Roadmap
 
 **Near term**
-- [ ] Production vector database (Chroma / Qdrant / pgvector) behind the existing `VectorStore` interface.
-- [ ] Dense embedding models (PyTorch-based) swapped in via `EmbedderRegistry`, replacing the current lightweight `HashEmbedder` for higher-quality retrieval.
-- [ ] Portfolio aggregation — model correlated exposure across a book of clients, not just a single firm.
-- [ ] Multi-year loss chains and reinsurance-pricing outputs (quota share, excess-of-loss layers).
+- [ ] Production vector database (Chroma / Qdrant / pgvector) behind `VectorStore`
+- [ ] Dense embedding models swapped in via `EmbedderRegistry`
+- [ ] Portfolio aggregation — correlated exposure across a book of clients
+- [ ] Multi-year loss chains and reinsurance-pricing outputs (quota share, excess-of-loss)
 
 **Medium term**
-- [ ] Reinsurance pricing integration and capital-modelling (SCR) outputs aligned with Solvency II.
-- [ ] Automated benchmark refresh against the latest DBIR, IBM CODB, and ENISA threat landscapes.
-- [ ] Scenario-dependency copula calibration from real correlated breach data.
+- [ ] Reinsurance pricing and Solvency II capital-modelling (SCR) outputs
+- [ ] Automated benchmark refresh against the latest DBIR / IBM CODB / ENISA
+- [ ] Scenario-dependency copula calibration from real correlated breach data
 
 **Long term**
-- [ ] Live threat-intelligence feed that continuously updates scenario frequencies.
-- [ ] Calibration to a client's actual claims experience (credibility weighting).
-- [ ] Underwriting-workbench UI for portfolio triage, quoting, and ongoing monitoring.
+- [ ] Live threat-intelligence feed continuously updating scenario frequencies
+- [ ] Credibility-weighted calibration to a client's actual claims experience
+- [ ] Underwriting workbench UI for portfolio triage, quoting, and monitoring
 
 ---
 
 ## Contributing
 
-Contributions are welcome. This is a research and modelling platform, so please:
+Contributions are welcome — this is a research and modelling platform. Please:
 
 - **Open an issue** first for feature requests or bug reports.
-- Keep the **quantitative engine deterministic** — changes must not break seeded reproducibility.
+- Keep the **quantitative engine deterministic** — changes must not break
+  seeded reproducibility.
 - Add tests for any engine or agent change; the suite is the gate.
 - **Never commit** real client data, licensed datasets, or API keys.
 
@@ -790,43 +488,49 @@ See [`SECURITY.md`](SECURITY.md) for vulnerability reporting.
 
 ---
 
-## Project Layout
+## Project layout
 
 ```
 src/
-├── cyberrisk/          # Installed Python package (engine, agent, llm, knowledge, api, cli)
+├── cyberrisk/          # Installed Python package (engine, agent, llm, api, cli)
 │   ├── scoring.py      #   18-factor risk scoring
 │   ├── simulation.py   #   Monte Carlo loss simulation
 │   ├── metrics.py      #   EAL, VaR, Expected Shortfall, PML
 │   ├── knowledge/      #   ingestion, chunking, embedding, vector store, RAG
-│   ├── agent/          #   AI consultant: LLM client (via llm/), tools, controller, UI
-│   ├── llm/            #   LLM provider abstraction: OpenAI/DeepSeek providers, factory
-│   └── api/            #   FastAPI web layer
-├── agent/              # Rule-based consultant agent (re-exports agent.safety, elicitation, ...)
-├── engine/             # Logical engine namespace (re-exports cyberrisk engine modules)
-└── rag/                # Logical RAG namespace (re-exports cyberrisk.knowledge)
+│   ├── agent/          #   AI consultant: LLM client, tools, controller
+│   └── api/            #   FastAPI web layer (+ /api/v1 mobile API)
+├── agent/              # Rule-based consultant agent (safety, elicitation, …)
+└── engine/             # Logical engine namespace (re-exports)
 
 app/
-├── frontend/           # React + Vite SPA (dist/ is served by FastAPI)
+├── frontend/           # React 19 + Vite SPA (dist/ is served by FastAPI)
 └── backend/            # FastAPI re-export (uvicorn app.backend:app)
 
-docs/                   # architecture, model methodology, deployment, API, knowledge base
-examples/               # runnable worked examples (full pipeline, benchmarks, demos)
-config/                 # scoring weights, scenarios, simulation, benchmark profiles
+api/vc_app.py           # Vercel serverless entrypoint
+config/                 # scoring weights, scenarios, simulation config
+docs/                   # architecture, methodology, deployment, API, knowledge
+examples/               # runnable worked examples
 knowledge/              # corpus, datasets, manifests, derived artifacts
-tests/                  # 600 tests, including tests/validate/ model-validation suite
-scripts/                # security scanner
+tests/                  # 680 tests incl. tests/validate/ model validation
 Dockerfile              # multi-stage image (backend + frontend + runtime)
-docker-compose.yml      # containerised deployment
+vercel.json             # Vercel serverless config
+render.yaml             # Render Blueprint
 ```
 
 ---
 
-## License & Data Policy
+## License & data policy
 
-This repository is licensed under the **[MIT License](LICENSE)** — permissive, so it can be embedded, extended, and used commercially with attribution. It is a good fit for a cyber risk / AI platform where the code is integrated into larger insurance and risk workflows.
+Licensed under the **[MIT License](LICENSE)** — permissive, so it can be
+embedded, extended, and used commercially with attribution.
 
-- **Source code and documentation only.** Confidential client materials, licensed cyber datasets, and generated reports are **not committed** — see `.gitignore`. Curated example benchmark data is included by design; licensed corpora must be sourced independently.
-- **No warranty.** The Software is provided "as is", without warranty of any kind (see the LICENSE file).
+- **Source code and documentation only.** Confidential client materials,
+  licensed datasets, and generated reports are never committed (see
+  `.gitignore`). Curated example benchmark data is included by design;
+  licensed corpora must be sourced independently.
+- **No warranty.** The Software is provided "as is", without warranty of any
+  kind.
 
-*CyberRisk AI is a research and modelling platform, not licensed financial advice. Outputs are model estimates for analytical use, not guarantees of loss or recovery.*
+*CyberRisk AI is a research and modelling platform, not licensed financial
+advice. Outputs are model estimates for analytical use, not guarantees of loss
+or recovery.*

@@ -165,6 +165,40 @@ describe('useChat', () => {
     expect(result.current.messages).toHaveLength(0);
   });
 
+  it('endSession mid-turn does not wedge `sending` (regression)', async () => {
+    createSession.mockResolvedValue({ session_id: 'sess-1' });
+    let resolveTurn: (value: unknown) => void = () => {};
+    turn.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTurn = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(result.current.sessionId).toBe('sess-1'));
+
+    // Start a turn that stays in flight, then end the session mid-turn.
+    let sendPromise: Promise<boolean> | undefined;
+    await act(async () => {
+      sendPromise = result.current.send('assess a firm');
+    });
+    expect(result.current.sending).toBe(true);
+
+    await act(async () => {
+      await result.current.endSession();
+    });
+    // The in-flight turn was invalidated (new session) — `sending` must reset
+    // or the voice client wedges on "thinking" forever (mic/send disabled).
+    expect(result.current.sending).toBe(false);
+
+    // Let the stale turn resolve; it must not flip `sending` back on.
+    await act(async () => {
+      resolveTurn(turnResponse());
+      await sendPromise;
+    });
+    expect(result.current.sending).toBe(false);
+  });
+
   it('never writes the conversation to storage (privacy/security)', async () => {
     createSession.mockResolvedValue({ session_id: 'sess-1' });
     turn.mockResolvedValue(turnResponse());

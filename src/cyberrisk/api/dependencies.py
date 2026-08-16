@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from cyberrisk.agent.schemas import AgentConfig, CompanyBrief, PolicyInput
+from fastapi import HTTPException
+
+from cyberrisk.agent.schemas import CompanyBrief, PolicyInput
+from cyberrisk.api.models import MAX_N_YEARS, MIN_N_YEARS
 
 
 def brief_from_request(data: dict[str, Any], firm_name: str | None = None) -> CompanyBrief:
@@ -33,10 +36,21 @@ def policy_from_request(data: dict[str, Any]) -> PolicyInput | None:
     return PolicyInput(**terms) if terms else None
 
 
-def n_years_from_request(data: dict[str, Any], default: int = 100_000) -> int | None:
-    """The optional Monte Carlo years knob, validated against AgentConfig bounds."""
+def n_years_from_request(data: dict[str, Any]) -> int | None:
+    """The optional Monte Carlo years knob, bounded like the API schemas.
+
+    The request models already reject out-of-range values (``ge=1_000``,
+    ``le=500_000``) at the FastAPI boundary; this is defence-in-depth for any
+    caller that passes an unvalidated dict, so a huge ``n_years`` can never
+    reach the Monte Carlo engine.
+    """
     raw = data.get("n_years")
     if raw is None:
         return None
-    cfg = AgentConfig()  # ge=1_000, le=500_000 on n_years
-    return int(raw)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="n_years must be an integer.") from None
+    if not MIN_N_YEARS <= value <= MAX_N_YEARS:
+        raise HTTPException(status_code=422, detail="n_years must be between 1000 and 500000.")
+    return value

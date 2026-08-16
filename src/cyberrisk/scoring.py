@@ -21,6 +21,7 @@ frequency link (see simulation.py: score_scaled_lambdas).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -96,8 +97,13 @@ class ScoringWeights(BaseModel):
         return str(self.category_bands[-1]["category"])
 
 
+@lru_cache(maxsize=4)
 def load_scoring_weights(path: str | Path | None = None) -> ScoringWeights:
-    """Load scoring weights from YAML (defaults to config/scoring_weights.yaml)."""
+    """Load scoring weights from YAML (defaults to config/scoring_weights.yaml).
+
+    Cached: this is read on every scored assessment, and the config is static
+    at runtime (the operator edits the file between restarts).
+    """
     if path is None:
         path = Path(__file__).resolve().parent.parent.parent / "config" / "scoring_weights.yaml"
     path = Path(path)

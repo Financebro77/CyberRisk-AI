@@ -38,18 +38,16 @@ def _configured_api_key() -> str | None:
     return key.strip() if key else None
 
 
-def _api_key_is_configured() -> bool:
-    return bool(_configured_api_key())
-
-
-def verify_api_key(authorization: str | None) -> str | None:
+def verify_api_key(authorization: str | None, key: str | None = None) -> str | None:
     """Return the client identity when the bearer token is valid, else None.
 
     ``authorization`` is the raw ``Authorization`` header value.  A valid key
     returns a stable identity string (used for rate limiting); an absent or
-    mismatched key returns None.  Never echoes the presented secret.
+    mismatched key returns None.  Never echoes the presented secret.  ``key``
+    may be passed in to avoid a second env read on the request path.
     """
-    key = _configured_api_key()
+    if key is None:
+        key = _configured_api_key()
     if key is None:
         # Auth is disabled — accept, and use the client IP as identity.
         return None
@@ -72,6 +70,10 @@ def verify_api_key(authorization: str | None) -> str | None:
 
 _requests: defaultdict[str, deque[float]] = defaultdict(deque)
 _LOCK = __import__("threading").Lock()
+# Soft cap on tracked identities: when exceeded, identities whose whole
+# window has lapsed are dropped (see _check_rate_limit) so a long-running
+# public deployment cannot accumulate one deque per unique client forever.
+_MAX_IDENTITIES = 1024
 
 
 def _rate_limit_per_minute() -> int:
@@ -97,6 +99,15 @@ def _check_rate_limit(identity: str, limit: int) -> None:
                 detail="Rate limit exceeded. Try again shortly.",
             )
         stamps.append(now)
+        # Bound the store: once it grows past the cap, prune identities whose
+        # newest request has already fallen out of the window (they cost us a
+        # deque each and would otherwise never be removed).
+        if len(_requests) > _MAX_IDENTITIES:
+            for key in [
+                k for k, v in _requests.items()
+                if not v or now - v[-1] > window
+            ]:
+                del _requests[key]
 
 
 def _reset_rate_limits() -> None:
@@ -136,14 +147,15 @@ class APIGatewayMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Parse the request (we only need the headers).
-        headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
-        authorization = headers.get("authorization")
+        # Parse the request (we only need the Authorization header).
+        authorization = _header_value(scope, b"authorization")
 
-        identity = verify_api_key(authorization)
-        if _api_key_is_configured() and identity is None:
-            response = _json_response(
-                {"detail": "Unauthorized. Provide a valid API key."},
+        key = _configured_api_key()
+        identity = verify_api_key(authorization, key)
+        if key is not None and identity is None:
+            response = _error_response(
+                scope,
+                "Unauthorized. Provide a valid API key.",
                 status.HTTP_401_UNAUTHORIZED,
             )
             await response(scope, receive, send)
@@ -156,7 +168,7 @@ class APIGatewayMiddleware:
                 _check_rate_limit(client_id, limit)
             except HTTPException as exc:
                 # In ASGI middleware we cannot raise — send the response.
-                response = _json_response({"detail": exc.detail}, exc.status_code)
+                response = _error_response(scope, str(exc.detail), exc.status_code)
                 await response(scope, receive, send)
                 return
 
@@ -171,7 +183,28 @@ def _client_identity_scope(scope: dict, api_identity: str | None) -> str:
     return client[0] if client and client[0] else "unknown"
 
 
-def _json_response(content: dict, status_code: int):
+def _header_value(scope: dict, name: bytes) -> str | None:
+    """The first header value for ``name`` (lowercase bytes), or None."""
+    for k, v in scope.get("headers", []):
+        if k.lower() == name:
+            return v.decode("latin-1")
+    return None
+
+
+def _error_response(scope: dict, detail: str, status_code: int):
+    """A gateway error body.
+
+    ``/api/v1/*`` requests get the versioned ``{"error": {...}}`` envelope so
+    auth / rate-limit errors honour the same contract as every other non-2xx
+    v1 response; all other paths keep the web API's ``{"detail": ...}`` shape.
+    """
+    if scope.get("path", "").startswith("/api/v1"):
+        from cyberrisk.api.v1.errors import v1_error_envelope
+
+        request_id = (scope.get("state") or {}).get("request_id", "")
+        content = v1_error_envelope(status_code, request_id)
+    else:
+        content = {"detail": detail}
     from starlette.responses import JSONResponse
 
     return JSONResponse(content, status_code=status_code)

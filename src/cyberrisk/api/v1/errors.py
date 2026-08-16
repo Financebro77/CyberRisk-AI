@@ -13,10 +13,11 @@ Guarantees:
     * every error carries the correlation id so an operator can find the log
       line.
 
-The handlers are PATH-AWARE so the unversioned web application is untouched:
-only ``/api/v1/*`` requests get the envelope.  Web requests keep their existing
-behaviour -- the SPA fallback for unknown client-side routes, and the
-``{"detail": ...}`` JSON contract for web API errors.
+The handlers are registered on the v1 SUB-APP (``api/v1/app.py``), which is
+mounted at ``/api/v1`` on the main app, so they only ever see versioned
+requests -- no path sniffing is needed.  The main app keeps its own handlers
+(``register_web_error_handlers``): the SPA fallback for unknown client-side
+routes and the ``{"detail": ...}`` JSON contract for web API errors.
 """
 
 from __future__ import annotations
@@ -39,33 +40,17 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 _FRONTEND_DIST = _REPO_ROOT / "app" / "frontend" / "dist"
 
 
-def _is_v1(path: str) -> bool:
-    return path.startswith("/api/v1")
-
-
-# HTTP status -> error code.  Codes are stable API surface.
-_STATUS_TO_CODE = {
-    400: "bad_request",
-    401: "unauthorized",
-    403: "forbidden",
-    404: "not_found",
-    409: "conflict",
-    422: "validation_error",
-    429: "rate_limited",
-    500: "internal_error",
-    503: "service_unavailable",
-}
-
-_STATUS_MESSAGES = {
-    400: "Bad request.",
-    401: "Unauthorized. Provide a valid API key.",
-    403: "Forbidden.",
-    404: "Not found.",
-    409: "Conflict.",
-    422: "Validation error.",
-    429: "Rate limit exceeded. Try again shortly.",
-    500: "An internal error occurred.",
-    503: "The service is currently unavailable.",
+# HTTP status -> (error code, message).  Codes are stable API surface.
+_STATUS_INFO = {
+    400: ("bad_request", "Bad request."),
+    401: ("unauthorized", "Unauthorized. Provide a valid API key."),
+    403: ("forbidden", "Forbidden."),
+    404: ("not_found", "Not found."),
+    409: ("conflict", "Conflict."),
+    422: ("validation_error", "Validation error."),
+    429: ("rate_limited", "Rate limit exceeded. Try again shortly."),
+    500: ("internal_error", "An internal error occurred."),
+    503: ("service_unavailable", "The service is currently unavailable."),
 }
 
 
@@ -87,12 +72,18 @@ def build_error_envelope(
 
 
 def _envelope_for_status(status_code: int, request_id: str) -> dict[str, Any]:
-    code = _STATUS_TO_CODE.get(status_code, "error")
-    return build_error_envelope(
-        code,
-        _STATUS_MESSAGES.get(status_code, "Error."),
-        request_id,
-    )
+    code, message = _STATUS_INFO.get(status_code, ("error", "Error."))
+    return build_error_envelope(code, message, request_id)
+
+
+def v1_error_envelope(status_code: int, request_id: str) -> dict[str, Any]:
+    """The versioned envelope for a status code.
+
+    Shared with the API gateway (``api.security``) so auth / rate-limit errors
+    on ``/api/v1/*`` honour the same ``{"error": {...}}`` contract as every
+    other non-2xx v1 response.
+    """
+    return _envelope_for_status(status_code, request_id)
 
 
 def _spa_fallback(request: Request) -> JSONResponse | FileResponse:
@@ -109,20 +100,14 @@ def _spa_fallback(request: Request) -> JSONResponse | FileResponse:
 
 
 def register_v1_error_handlers(app: FastAPI) -> None:
-    """Attach path-aware error handlers to the FastAPI app.
+    """Attach the versioned error envelope to the v1 sub-app.
 
-    ``/api/v1/*`` requests get the versioned envelope; everything else keeps the
-    web application's existing behaviour (SPA fallback + ``{"detail": ...}``).
+    Only ever called on the mounted ``/api/v1`` app, so every request seen
+    here is versioned -- the envelope applies unconditionally.
     """
 
     @app.exception_handler(StarletteHTTPException)
-    async def _http_exc_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse | FileResponse:
-        if not _is_v1(request.url.path):
-            if exc.status_code == 404:
-                return _spa_fallback(request)
-            # Preserve the web API's existing {"detail": ...} contract.
-            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
+    async def _http_exc_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         request_id = get_request_id(request.scope)
         envelope = _envelope_for_status(exc.status_code, request_id)
         if (
@@ -135,10 +120,6 @@ def register_v1_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-        if not _is_v1(request.url.path):
-            # Keep FastAPI's default web validation shape untouched.
-            return JSONResponse(status_code=422, content={"detail": exc.errors()})
-
         request_id = get_request_id(request.scope)
         detail = [
             {"loc": [str(p) for p in err.get("loc", [])], "msg": err.get("msg", "invalid")}
@@ -154,11 +135,6 @@ def register_v1_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
-        if not _is_v1(request.url.path):
-            # Re-raise so the outer ServerErrorMiddleware keeps the web app's
-            # default 500 behaviour (plain text) exactly as before.
-            raise exc
-
         request_id = get_request_id(request.scope)
         # The full traceback is logged server-side; the client gets only the
         # generic message so internals never leak.
@@ -167,3 +143,32 @@ def register_v1_error_handlers(app: FastAPI) -> None:
             status_code=500,
             content=_envelope_for_status(500, request_id),
         )
+
+
+def register_web_error_handlers(app: FastAPI) -> None:
+    """Attach the web app's existing error behaviour (SPA fallback + detail).
+
+    The unversioned surface keeps exactly what it had before v1 was split out:
+    unknown client-side routes serve the built SPA shell, unknown ``/api``
+    paths stay JSON, validation keeps the default ``{"detail": ...}`` shape,
+    and unhandled errors re-raise so the outer ServerErrorMiddleware returns
+    the default plain-text 500.
+    """
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_exc_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse | FileResponse:
+        if exc.status_code == 404:
+            return _spa_fallback(request)
+        # Preserve the web API's existing {"detail": ...} contract.
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        # Keep FastAPI's default web validation shape untouched.
+        return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+    @app.exception_handler(Exception)
+    async def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
+        # Re-raise so the outer ServerErrorMiddleware keeps the web app's
+        # default 500 behaviour (plain text) exactly as before.
+        raise exc

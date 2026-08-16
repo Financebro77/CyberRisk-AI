@@ -159,32 +159,36 @@ def _qualifier_for(text: str) -> str:
     return "neutral"
 
 
-def _qualifier_for_control(low_text: str, keyword: str) -> str:
+def _qualifier_for_control(low_text: str, keywords: tuple[str, ...]) -> str:
     """Qualifier for ONE control, read from the clause that mentions it.
 
-    Finds the keyword's position and qualifies the clause-local window around
-    it (the containing clause after splitting on separators), so "no immutable
+    ``keywords`` is the SAME alias list the trigger used, so a control the
+    client described with a synonym ("multi-factor authentication", "network
+    isolation", "disaster recovery") is still qualified from its own clause.
+    The qualifier is clause-local (split on separators), so "no immutable
     backups" does not downgrade "MFA is partial" in the same sentence.
 
-    When the keyword appears in MULTIPLE clauses (e.g. "poor backups, no
+    When an alias appears in MULTIPLE clauses (e.g. "poor backups, no
     immutable backups"), the strictest (most negative) mention wins -- the
     client said backups are at least partially absent, so "none" is the honest
     reading.
     """
-    if keyword not in low_text:
+    hits = [k for k in keywords if k in low_text]
+    if not hits:
         return "neutral"
-    # Score every clause that mentions the keyword; "none" > "weak" > "strong"
+    # Score every clause that mentions any alias; "none" > "weak" > "strong"
     # > "neutral" (a single absent control is the strongest signal).
     _RANK = {"none": 3, "weak": 2, "strong": 1, "neutral": 0}
     best = "neutral"
-    idx = -1
-    while True:
-        idx = low_text.find(keyword, idx + 1)
-        if idx < 0:
-            break
-        qual = _qualifier_for(_clause_containing(low_text, idx))
-        if _RANK[qual] > _RANK[best]:
-            best = qual
+    for keyword in hits:
+        idx = -1
+        while True:
+            idx = low_text.find(keyword, idx + 1)
+            if idx < 0:
+                break
+            qual = _qualifier_for(_clause_containing(low_text, idx))
+            if _RANK[qual] > _RANK[best]:
+                best = qual
     return best
 
 
@@ -208,6 +212,20 @@ def _clause_containing(low_text: str, idx: int) -> str:
     return low_text[start:end]
 
 
+# Per-control alias sets.  Each trigger AND its qualifier share the SAME list,
+# so a client who describes a control with a synonym ("multi-factor
+# authentication", "network isolation", "endpoint protection", "disaster
+# recovery", "SOC") gets the control scored from that phrasing -- before this,
+# the trigger matched the synonym but the qualifier searched for a narrower
+# literal keyword, silently rating a stated weakness as "neutral".
+_MFA_ALIASES = ("mfa", "multi-factor", "multifactor", "two-factor", "2fa", "2-factor", "2 factor")
+_SEGMENT_ALIASES = ("segment", "microsegment", "network isolation", "air-gap", "air gap")
+_EDR_ALIASES = ("edr", "endpoint", "antivirus", "anti-virus", "av ")
+_DR_ALIASES = ("disaster recovery", "dr testing", "recovery test", "dr plan")
+_IR_ALIASES = ("incident response", "ir plan", "security team", "soc", "runbook")
+_CISO_ALIASES = ("ciso", "risk oversight", "security leadership", "board")
+
+
 def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> None:
     """Populate factor ratings from the client's free-text controls description.
 
@@ -220,22 +238,22 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
     low = text.lower()
 
     # MFA ------------------------------------------------------------------
-    if any(k in low for k in ("mfa", "multi-factor", "multifactor", "two-factor", "2fa", "2-factor", "2 factor")):
+    if any(k in low for k in _MFA_ALIASES):
         factors["mfa_coverage"] = {
             "strong": "comprehensive",
             "weak": "minimal",
             "none": "none",
             "neutral": "partial",
-        }[_qualifier_for_control(low, "mfa")]
+        }[_qualifier_for_control(low, _MFA_ALIASES)]
 
     # Network segmentation / privileged access -----------------------------
-    if any(k in low for k in ("segment", "microsegment", "network isolation", "air-gap", "air gap")):
+    if any(k in low for k in _SEGMENT_ALIASES):
         factors["privileged_access"] = {
             "strong": "segmented",
             "weak": "weak",
             "none": "none",
             "neutral": "basic",
-        }[_qualifier_for_control(low, "segment")]
+        }[_qualifier_for_control(low, _SEGMENT_ALIASES)]
 
     # Patching --------------------------------------------------------------
     if any(k in low for k in ("patch", "patching")):
@@ -244,7 +262,7 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "adhoc",
             "none": "none",
             "neutral": "monthly",
-        }[_qualifier_for_control(low, "patch")]
+        }[_qualifier_for_control(low, ("patch", "patching"))]
 
     # Vulnerability scanning ------------------------------------------------
     if "vuln" in low and "scan" in low:
@@ -253,16 +271,16 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "quarterly",
             "none": "none",
             "neutral": "weekly",
-        }[_qualifier_for_control(low, "scan")]
+        }[_qualifier_for_control(low, ("vuln", "scan"))]
 
     # EDR / endpoint --------------------------------------------------------
-    if any(k in low for k in ("edr", "endpoint", "antivirus", "anti-virus", "av ")):
+    if any(k in low for k in _EDR_ALIASES):
         factors["edr_coverage"] = {
             "strong": "comprehensive",
             "weak": "minimal",
             "none": "none",
             "neutral": "majority",
-        }[_qualifier_for_control(low, "edr")]
+        }[_qualifier_for_control(low, _EDR_ALIASES)]
 
     # Backups ---------------------------------------------------------------
     if "backup" in low:
@@ -271,34 +289,34 @@ def _scan_security_controls(brief: CompanyBrief, factors: dict[str, str]) -> Non
             "weak": "monthly",
             "none": "none",
             "neutral": "daily",
-        }[_qualifier_for_control(low, "backup")]
+        }[_qualifier_for_control(low, ("backup",))]
 
     # DR / recovery testing -------------------------------------------------
-    if any(k in low for k in ("disaster recovery", "dr testing", "recovery test", "dr plan")):
+    if any(k in low for k in _DR_ALIASES):
         factors["dr_testing"] = {
             "strong": "quarterly",
             "weak": "occasional",
             "none": "never",
             "neutral": "annual",
-        }[_qualifier_for_control(low, "dr")]
+        }[_qualifier_for_control(low, _DR_ALIASES)]
 
     # Incident response -----------------------------------------------------
-    if any(k in low for k in ("incident response", "ir plan", "security team", "soc", "runbook")):
+    if any(k in low for k in _IR_ALIASES):
         factors["incident_response"] = {
             "strong": "tested",
             "weak": "informal",
             "none": "none",
             "neutral": "documented",
-        }[_qualifier_for_control(low, "incident response")]
+        }[_qualifier_for_control(low, _IR_ALIASES)]
 
     # Governance / CISO -----------------------------------------------------
-    if any(k in low for k in ("ciso", "risk oversight", "security leadership", "board")):
+    if any(k in low for k in _CISO_ALIASES):
         factors["risk_oversight"] = {
             "strong": "dedicated",
             "weak": "delegated",
             "none": "absent",
             "neutral": "delegated",
-        }[_qualifier_for_control(low, "ciso")]
+        }[_qualifier_for_control(low, _CISO_ALIASES)]
 
 
 def _scan_existing_coverage(brief: CompanyBrief, factors: dict[str, str]) -> None:
@@ -754,6 +772,12 @@ def search_incidents(
     }
 
 
+def report_filename(name: str) -> str:
+    """The on-disk workbook filename for a firm (shared with the download route)."""
+    safe_name = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in name).strip("_") or "Client"
+    return f"{safe_name}_report.xlsx"
+
+
 def generate_risk_report(
     brief: CompanyBrief,
     firm_name: str | None = None,
@@ -791,11 +815,10 @@ def generate_risk_report(
     )
     out_dir_path = Path(out_dir) if out_dir else REPO_ROOT / "data" / "output"
     out_dir_path.mkdir(parents=True, exist_ok=True)
-    safe_name = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in name).strip("_") or "Client"
 
     from cyberrisk.reporting.excel import write_report
 
-    path = write_report(result, policy_metrics=pm, out_path=out_dir_path / f"{safe_name}_report.xlsx")
+    path = write_report(result, policy_metrics=pm, out_path=out_dir_path / report_filename(name))
     m = compute_metrics(result)
     return {
         "status": "ok",

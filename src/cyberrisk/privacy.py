@@ -9,8 +9,8 @@ Centralised privacy behaviour for the public release:
                                      company identifiers)
     * ``redact_pii``               — replace detected PII with placeholders
     * ``sanitise_log``             — strip secrets/PII from a log line
-    * ``sanitised_logger``         — a logging.Logger wrapper that sanitises
-                                     every record before it is written
+    * ``SanitisingHandler``        — a root StreamHandler that sanitises every
+                                     formatted line before it is written
 
 This layer is ADDITIVE — it never modifies the risk engine.  It sits on the
 input boundary (before user text reaches the agent/engine) and on the output
@@ -22,6 +22,7 @@ an operator can tune them without code changes.
 
 from __future__ import annotations
 
+import copy
 import logging
 import re
 from dataclasses import dataclass
@@ -212,37 +213,33 @@ def sanitise_log(message: str) -> str:
     return out
 
 
-class SanitisedLogger(logging.Logger):
-    """A logging.Logger subclass that sanitises every emitted record.
+class SanitisingHandler(logging.StreamHandler):
+    """A StreamHandler whose output is scrubbed of secrets and PII.
 
-    Use ``get_sanitised_logger(name)`` or ``configure_sanitised_logging()``
-    to route a module's logs through this.  The record's message and any
-    dict/args are scrubbed before the handler writes them.
+    Installed on the ROOT logger so every record is covered: loggers across
+    the codebase are created as plain ``logging.Logger`` (often before this
+    module is configured), so a per-logger subclass would silently miss most
+    of them.  The final formatted line (message AND any exception traceback)
+    is sanitised, never mutating the shared record.
     """
 
-    def makeRecord(self, *args, **kwargs):  # noqa: N802
-        record = super().makeRecord(*args, **kwargs)
+    def format(self, record: logging.LogRecord) -> str:
+        record = copy.copy(record)
+        line = super().format(record)
         try:
-            record.msg = sanitise_log(str(record.getMessage()))
-            record.args = ()
+            return sanitise_log(line)
         except Exception:  # noqa: BLE001 - logging must never raise
-            pass
-        return record
+            return line
 
 
-def get_sanitised_logger(name: str) -> SanitisedLogger:
-    """Return a SanitisedLogger for ``name``, wired to the root handler."""
-    logger = logging.getLogger(name)
-    if isinstance(logger, SanitisedLogger):
-        return logger
-    # Replace the manager's logger with our subclass while keeping its
-    # effective level and handlers.
-    logger_class = logging.getLoggerClass()
-    logging.setLoggerClass(SanitisedLogger)
-    new_logger = logging.getLogger(name)
-    new_logger.setLevel(logger.level)
-    logging.setLoggerClass(logger_class)
-    return new_logger  # type: ignore[return-value]
+def get_sanitised_logger(name: str) -> logging.Logger:
+    """Return a logger whose output is sanitised.
+
+    Sanitising happens in the root handler installed by
+    ``configure_sanitised_logging``, which every logger propagates to -- so
+    the plain logger returned here is already covered.
+    """
+    return logging.getLogger(name)
 
 
 def configure_sanitised_logging(level: int = logging.INFO) -> None:
@@ -256,7 +253,7 @@ def configure_sanitised_logging(level: int = logging.INFO) -> None:
     # Remove existing handlers so we don't double-log or leak via a raw one.
     for handler in list(root.handlers):
         root.removeHandler(handler)
-    handler = logging.StreamHandler()
+    handler = SanitisingHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     root.addHandler(handler)
 

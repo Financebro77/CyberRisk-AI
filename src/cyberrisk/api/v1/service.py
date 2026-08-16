@@ -12,24 +12,25 @@ through unchanged so a client knows exactly which fields to ask for.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from cyberrisk.agent.disclosure import DISCLOSURE_HEADING, LIMITATIONS
-from cyberrisk.agent.scenario_contribution import analyze_scenario_contribution
 from cyberrisk.agent.schemas import CompanyBrief, PolicyInput
-from cyberrisk.agent.tools import (
-    analyse_insurance_structure,
-    assess_company_risk,
-    run_loss_simulation,
-    search_incidents,
+from cyberrisk.agent.tools import search_incidents
+from cyberrisk.api.assessment import (
+    compose_assessment,
+    mitigation_scenarios,
+    model_limitations,
 )
 
 logger = logging.getLogger("cyberrisk.api.v1")
 
-# The loss model cannot run without these (CompanyBrief.missing_for_simulation).
-# The engine's completeness guard is the single source of truth; this is only a
-# fallback for evidence gathering when the guard was not hit.
-_REQUIRED_BRIEF_FIELDS = ("revenue_usd", "security_controls")
+# The retriever reads a read-only vector store; build it once per process and
+# reuse it across requests (re-opening SQLite + re-reading every vector per
+# submit is wasted work).
+if TYPE_CHECKING:
+    from cyberrisk.knowledge.rag import Retriever
+
+_retriever: Retriever | None = None
 
 
 def run_assessment_pipeline(
@@ -39,32 +40,21 @@ def run_assessment_pipeline(
     n_years: int | None = None,
     request_id: str = "",
 ) -> dict[str, Any]:
-    """Run a complete assessment: score -> simulate -> insurance -> contribution.
+    """Run a complete assessment via the shared ``compose_assessment`` and map
+    the tool dicts into the versioned result schema.
 
     Returns either the engine's ``insufficient_info`` guard (HTTP-200 business
     response, no simulation run) or the full result payload under
     ``{"status": "ok", "result": {...}}``.
     """
-    # 1. Risk score + drivers (deterministic, works on partial briefs).
-    score_res = assess_company_risk(brief)
-    # 2. Monte Carlo loss simulation (guarded).
-    sim_res = run_loss_simulation(brief, n_years=n_years)
-    if sim_res.get("status") == "insufficient_info":
-        return {
-            "status": "insufficient_info",
-            "needed": sim_res.get("needed", []),
-            "message": sim_res.get("message", "Insufficient information to model the loss."),
-        }
-    # 3. Insurance adequacy with the requested policy terms (or defaults).
-    ins_res = analyse_insurance_structure(brief, policy=policy, n_years=n_years)
-    # 4. Scenario contribution -> model-linked mitigation roadmap.
-    contrib = analyze_scenario_contribution(brief, n_years=n_years)
-
+    out = compose_assessment(brief, policy=policy, n_years=n_years)
+    if out["status"] != "ok":
+        return out
     result = build_result_payload(
-        score_res=score_res,
-        sim_res=sim_res,
-        ins_res=ins_res,
-        contrib=contrib,
+        score_res=out["score"],
+        sim_res=out["sim"],
+        ins_res=out["ins"],
+        contrib=out["contrib"],
         brief=brief,
         request_id=request_id,
     )
@@ -86,7 +76,7 @@ def build_result_payload(
     rename is ``pml_1in1000`` (the engine key for the 1-in-1000-year PML) to the
     API name ``pml_1000``.
     """
-    mitigation_recommendations = contrib.get("scenarios", []) if contrib.get("status") == "ok" else []
+    mitigation_recommendations = mitigation_scenarios(contrib)
 
     return {
         "risk_score": score_res.get("risk_score"),
@@ -107,10 +97,7 @@ def build_result_payload(
             "evaluation": ins_res.get("evaluation"),
         },
         "mitigation_recommendations": mitigation_recommendations,
-        "model_limitations": {
-            "heading": DISCLOSURE_HEADING,
-            "limitations": list(LIMITATIONS),
-        },
+        "model_limitations": model_limitations(),
         "evidence": gather_evidence(brief, score_res, request_id=request_id),
     }
 
@@ -137,21 +124,20 @@ def gather_evidence(
     # Topic-aware retrieval queries built from the brief + top risk drivers.
     industry = brief.industry or ""
     drivers = score_res.get("risk_drivers", []) or []
-    query = " ".join(
-        part
-        for part in (industry, "cyber risk")
-        if part
-    )
+    query = " ".join(part for part in (industry, "cyber risk") if part)
     # The top driver (if any) sharpens the search.
     if drivers:
-        query = f"{query} {drivers[0]}".strip()
+        query = f"{query} {drivers[0]}"
 
-    # 1. RAG semantic search over the knowledge corpus.
+    # 1. RAG semantic search over the knowledge corpus.  The retriever wraps a
+    #    read-only vector store — build it once and reuse it across requests.
     try:
-        from cyberrisk.knowledge.rag import Retriever
+        global _retriever
+        if _retriever is None:
+            from cyberrisk.knowledge.rag import Retriever
 
-        retriever = Retriever.from_derived(top_k=4)
-        chunks = retriever.retrieve(query) if query else []
+            _retriever = Retriever.from_derived(top_k=4)
+        chunks = _retriever.retrieve(query) if query else []
         seen: set[str] = set()
         for chunk in chunks:
             if chunk.chunk_id in seen:

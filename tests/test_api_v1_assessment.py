@@ -7,36 +7,6 @@ contract; auth/rate-limit behaviour is covered in test_api_v1_security.py.
 
 from __future__ import annotations
 
-import pytest
-from fastapi.testclient import TestClient
-
-from cyberrisk.api.main import app
-from cyberrisk.api.security import _reset_rate_limits
-from cyberrisk.api.v1.store import get_store
-
-
-@pytest.fixture(autouse=True)
-def _isolate_api_security(monkeypatch):
-    """Default: auth and rate limiting are both OFF."""
-    monkeypatch.delenv("CYBERRISK_API_KEY", raising=False)
-    monkeypatch.delenv("CYBERRISK_RATE_LIMIT", raising=False)
-    _reset_rate_limits()
-    yield
-    _reset_rate_limits()
-
-
-@pytest.fixture(autouse=True)
-def _clean_store():
-    """Each test starts with an empty assessment store."""
-    get_store().clear()
-    yield
-    get_store().clear()
-
-
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(app)
-
 
 FULL_BRIEF = {
     "firm_name": "Acme Healthcare",
@@ -156,7 +126,8 @@ def test_lifecycle_start_submit_results_replay(client):
     assert replay["status"] == "ok"
     _assert_full_result_shape(replay["result"])
 
-    assert submitted_id != assessment_id or True  # ids are unique per call
+    # The start and submit calls each mint their own id (uuid4).
+    assert submitted_id != assessment_id
 
 
 def test_results_404_for_unknown_and_pending(client):
@@ -167,14 +138,18 @@ def test_results_404_for_unknown_and_pending(client):
     assert client.get(f"/api/v1/assessment/{pending_id}/results").status_code == 404
 
 
-def test_resubmit_is_idempotent_and_refreshes(client):
-    """Re-submitting is allowed and refreshes the stored result under the id."""
+def test_repeated_submits_are_deterministic(client):
+    """Two submits of the same brief produce the same risk score.
+
+    The submit route always mints a fresh assessment id (it does not accept a
+    caller-supplied id), but the scoring engine is deterministic, so a repeat
+    submit must agree with the first.
+    """
     first = client.post("/api/v1/assessment/submit", json=FULL_BRIEF).json()
     second = client.post("/api/v1/assessment/submit", json=FULL_BRIEF).json()
-    # Each submit creates its own id, but re-submitting the SAME id works too.
-    resubmit = client.post("/api/v1/assessment/submit", json=FULL_BRIEF)
-    assert resubmit.status_code == 201
-    assert resubmit.json()["result"]["risk_score"] == first["result"]["risk_score"]
+    assert second["status"] == "ok"
+    assert second["assessment_id"] != first["assessment_id"]
+    assert second["result"]["risk_score"] == first["result"]["risk_score"]
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +225,9 @@ def test_submit_degrades_gracefully_without_knowledge_store(client, monkeypatch)
     def _raise(*_args, **_kwargs):
         raise FileNotFoundError("no vector store")
 
-    monkeypatch.setattr(service, "Retriever", None, raising=False)
+    # Drop the process-level retriever cache so the patched constructor is
+    # actually exercised (the cache persists across tests in this process).
+    monkeypatch.setattr(service, "_retriever", None, raising=False)
     monkeypatch.setattr("cyberrisk.knowledge.rag.Retriever.from_derived", _raise)
 
     resp = client.post("/api/v1/assessment/submit", json=FULL_BRIEF)

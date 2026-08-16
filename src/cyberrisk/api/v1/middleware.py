@@ -16,19 +16,13 @@ as a final backstop so anything that slips through is redacted.
 from __future__ import annotations
 
 import logging
+import re
 import time
 import uuid
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-_ID_PATTERN = None  # populated below
-
-try:
-    import re
-
-    _ID_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
-except Exception:  # pragma: no cover - re is stdlib, always present
-    _ID_RE = None
+_ID_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 
 
 def get_request_id(scope: Scope) -> str:

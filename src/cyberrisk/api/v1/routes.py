@@ -16,6 +16,7 @@ balancers / probes can reach it without a key.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -62,7 +63,7 @@ def assessment_start(
     otherwise ``"pending"`` with the missing fields listed.  No simulation runs.
     """
     data = req.model_dump() if req is not None else {}
-    brief = brief_from_request(data, firm_name=req.firm_name if req else None)
+    brief = brief_from_request(data)
     missing = brief.missing_for_simulation()
 
     assessment_id = uuid.uuid4().hex
@@ -94,38 +95,31 @@ def assessment_submit(
     """
     request_id = get_request_id(request.scope)
     data = req.model_dump()
-    brief = brief_from_request(data, firm_name=req.firm_name)
+    brief = brief_from_request(data)
     policy = policy_from_request(data)
     n_years = n_years_from_request(data)
 
     assessment_id = uuid.uuid4().hex
-    missing = brief.missing_for_simulation()
-    if missing:
-        message = (
-            "Cannot run the loss model without revenue and a security-controls description. "
-            "Ask the client for these before proceeding."
-        )
-        store.store_result(assessment_id, "insufficient_info", needed=missing, message=message)
-        return {
-            "assessment_id": assessment_id,
-            "status": "insufficient_info",
-            "needed": missing,
-            "message": message,
-        }
-
+    # The pipeline runs the completeness guard itself (via run_loss_simulation);
+    # no pre-check here so the required-fields list + message live in one place.
     outcome = run_assessment_pipeline(
         brief,
         policy=policy,
         n_years=n_years,
         request_id=request_id,
     )
-    if outcome.get("status") != "ok":
-        # The guard path was not hit above; anything else is an error.
+    status = outcome.get("status", "error")
+    if status != "ok":
+        # Persist the guard / error outcome so a status poll sees it, then
+        # return the same shape the client needs to ask for missing fields.
+        needed = outcome.get("needed", [])
+        message = outcome.get("message", "Assessment could not be completed.")
+        store.store_result(assessment_id, status, needed=needed, message=message)
         return {
             "assessment_id": assessment_id,
-            "status": outcome.get("status", "error"),
-            "needed": outcome.get("needed", []),
-            "message": outcome.get("message", "Assessment could not be completed."),
+            "status": status,
+            "needed": needed,
+            "message": message,
         }
     store.store_result(assessment_id, "ok", result=outcome["result"])
     return {
@@ -180,6 +174,4 @@ def assessment_results(
 
 
 def _iso(timestamp: float) -> str:
-    import datetime as _dt
-
-    return _dt.datetime.fromtimestamp(timestamp, tz=_dt.timezone.utc).isoformat()
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()

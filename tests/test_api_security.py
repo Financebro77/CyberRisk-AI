@@ -6,27 +6,6 @@ manipulated to enable/disable auth and rate limiting.
 
 from __future__ import annotations
 
-import pytest
-from fastapi.testclient import TestClient
-
-from cyberrisk.api.main import app
-from cyberrisk.api.security import _reset_rate_limits
-
-
-@pytest.fixture(autouse=True)
-def _isolate_api_security(monkeypatch):
-    """Default: auth and rate limiting are both OFF."""
-    monkeypatch.delenv("CYBERRISK_API_KEY", raising=False)
-    monkeypatch.delenv("CYBERRISK_RATE_LIMIT", raising=False)
-    _reset_rate_limits()
-    yield
-    _reset_rate_limits()
-
-
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(app)
-
 
 def test_open_api_without_key(client):
     """When no CYBERRISK_API_KEY is set, the API is open (default dev mode)."""

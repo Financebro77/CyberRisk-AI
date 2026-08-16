@@ -128,11 +128,9 @@ export class VoiceEngine {
    * microphone prompt (iOS requires this).
    */
   start(): void {
-    if (!this.supported) {
-      this.callbacks.onError?.('recognition-failed', 'unsupported');
-      return;
-    }
     this.cancelSpeech();
+    // ensureRecognizer() is null exactly when speech recognition is
+    // unsupported, so the single check below covers both cases.
     const rec = this.ensureRecognizer();
     if (!rec) {
       this.callbacks.onError?.('recognition-failed', 'unsupported');

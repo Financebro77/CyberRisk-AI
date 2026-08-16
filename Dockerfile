@@ -55,6 +55,15 @@ RUN pip install --no-cache-dir ".[web,reporting,knowledge,agent]"
 # container is self-contained.
 COPY config ./config
 
+# RAG vector index: build it from the committed corpus at image build time so
+# the runtime image is self-contained (no host volumes, as on a PaaS like
+# Render).  Ingest -> embed are the existing offline pipelines; they are
+# deterministic and need no API keys.  Derived artifacts (knowledge/derived/*)
+# are regenerable and stay excluded from the build context via .dockerignore.
+COPY knowledge ./knowledge
+RUN python -m cyberrisk.knowledge.pipeline && \
+    python -m cyberrisk.knowledge.embed_pipeline
+
 # ---- Stage 2: frontend (React SPA) ------------------------------------
 FROM node:20-alpine AS frontend
 WORKDIR /build

@@ -289,6 +289,14 @@ export interface ChatTurnRequest {
   welcome?: boolean;
 }
 
+/** One message the chat transcript renders (consultant + voice client). */
+export interface TranscriptMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  toolTrace: ChatToolTrace[];
+  safety?: { class_name: string; response: string } | null;
+}
+
 export interface ChatTurnResponse {
   session_id: string;
   role: string;
