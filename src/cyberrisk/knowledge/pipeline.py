@@ -307,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
     """CLI: python -m cyberrisk.knowledge.pipeline [--config PATH] [--force] [--doc ID]"""
     parser = argparse.ArgumentParser(
         prog="cyberrisk.knowledge.pipeline",
-        description="CyberRisk AI knowledge document ingestion pipeline",
+        description="Armageddon knowledge document ingestion pipeline",
     )
     parser.add_argument("--config", default=None, help="IngestConfig YAML path")
     parser.add_argument("--force", action="store_true", help="Re-ingest all docs, ignoring state")

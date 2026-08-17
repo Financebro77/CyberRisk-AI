@@ -8,6 +8,7 @@
  */
 import type {
   ApiResult,
+  ChatSession,
   ChatTurnRequest,
   ChatTurnResponse,
   CompanyBrief,
@@ -39,7 +40,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* non-JSON error body */
     }
-    throw new Error(detail);
+    // Attach the status so callers can distinguish "session is gone" (404)
+    // from transient network/engine failures.
+    const err = new Error(detail) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
   return (await res.json()) as T;
 }
@@ -86,10 +91,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(req),
       }),
-    history: (sessionId: string) =>
-      request<{ session_id: string; history: Array<{ role: string; content: string }> }>(
-        `/chat/sessions/${sessionId}/history`,
+    /** One persisted conversation (resume / sidebar refresh). */
+    getSession: (sessionId: string) => request<ChatSession>(`/chat/sessions/${sessionId}`),
+    /** Bulk-fetch the persisted conversations the browser owns (sidebar). */
+    listSessions: (ids: string[]) =>
+      request<{ sessions: ChatSession[] }>(
+        `/chat/sessions?ids=${encodeURIComponent(ids.join(','))}`,
       ),
+    renameSession: (sessionId: string, title: string) =>
+      request<{ status: string }>(`/chat/sessions/${sessionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+      }),
     deleteSession: (sessionId: string) =>
       request<{ status: string }>(`/chat/${sessionId}`, { method: 'DELETE' }),
   },

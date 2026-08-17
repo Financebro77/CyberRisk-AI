@@ -1,4 +1,4 @@
-"""Shared fixtures for the CyberRiskAI validation suite.
+"""Shared fixtures for the Armageddon validation suite.
 
 Keeps every test module DRY: repo paths, a realistic multi-scenario config,
 a minimal single-scenario config (fast), prebuilt scoring weights, profile
@@ -162,6 +162,16 @@ def _clean_store():
     get_store().clear()
     yield
     get_store().clear()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_chat_db(tmp_path, monkeypatch):
+    """Each test writes the chat DB to a throwaway path — never the repo's
+    data/chat.db — and re-creates the store singleton per test."""
+    monkeypatch.setenv("CYBERRISK_CHAT_DB", str(tmp_path / "chat.db"))
+    # Reset the lazily-created singleton so get_chat_store() re-points at the
+    # new path (monkeypatch auto-reverts both after the test).
+    monkeypatch.setattr("cyberrisk.api.chat._chat_store", None)
 
 
 @pytest.fixture()

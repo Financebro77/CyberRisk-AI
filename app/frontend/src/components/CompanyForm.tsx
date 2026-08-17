@@ -9,6 +9,9 @@ interface CompanyFormProps {
   /** Button label, defaults to "Run Model". */
   submitLabel?: string;
   onSubmit: (brief: CompanyBrief & PolicyInput) => void | Promise<unknown>;
+  /** Fired with the current assembled brief whenever any field/knob changes —
+   *  the parent debounces this into an auto re-run (live score refresh). */
+  onChange?: (brief: CompanyBrief & PolicyInput) => void;
   loading?: boolean;
   initial?: CompanyBrief;
 }
@@ -115,6 +118,44 @@ function buildSecurityControls(c: {
   return clauses.join(', ');
 }
 
+/**
+ * Assemble the full submission brief (values + policy knobs + assembled
+ * controls text) exactly as it will be sent to the engine.  Pure function so
+ * the manual submit and the live `onChange` fire the identical payload shape.
+ */
+function buildBrief(values: Record<string, string>, controlsText: string): CompanyBrief & PolicyInput {
+  const brief: CompanyBrief & PolicyInput = {
+    firm_name: values.firm_name || undefined,
+    industry: values.industry || undefined,
+    technology_dependency: values.technology_dependency || undefined,
+    existing_coverage: values.existing_coverage || undefined,
+    risk_appetite: values.risk_appetite || undefined,
+    // Raw structured extras (sent as hints; the API drops unknown fields)
+    country: values.country || undefined,
+    sensitive_records: values.sensitive_records || undefined,
+    cloud_dependency: values.cloud_dependency || undefined,
+    third_party_dependency: values.third_party_dependency || undefined,
+    mfa_coverage: values.mfa_coverage || undefined,
+    pam: values.pam || undefined,
+    network_segmentation: values.network_segmentation || undefined,
+    backup_strategy: values.backup_strategy || undefined,
+    vulnerability_management: values.vulnerability_management || undefined,
+    incident_response: values.incident_response || undefined,
+  };
+  // security_controls assembled from the structured controls selects, or the
+  // manual override if the user typed their own description.
+  brief.security_controls = controlsText || buildSecurityControls(values) || undefined;
+  if (values.revenue_usd !== '') brief.revenue_usd = Number(values.revenue_usd);
+  if (values.customer_records !== '') brief.customer_records = Number(values.customer_records);
+  if (values.employees !== '') brief.employees = Number(values.employees);
+  brief.previous_incidents = values.previous_incidents === '' ? 0 : Number(values.previous_incidents);
+  // The insurance knobs the engine honors: retention = per-occurrence
+  // deductible, policy limit = annual aggregate limit (see /api/report/executive).
+  if (values.retention !== '') brief.per_occurrence_deductible = Number(values.retention);
+  if (values.policy_limit !== '') brief.annual_aggregate_limit = Number(values.policy_limit);
+  return brief;
+}
+
 /* Demo Mode loads a fresh random company every press (see lib/demoRandom). */
 
 /* ------------------------ select configs ----------------------- */
@@ -180,7 +221,7 @@ function initialValues(initial?: CompanyBrief): Record<string, string> {
 /* ------------------------ component --------------------------- */
 
 export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(function CompanyForm(
-  { children, submitLabel = 'Run Model', onSubmit, loading, initial },
+  { children, submitLabel = 'Run Model', onSubmit, onChange, loading, initial },
   ref,
 ) {
   const [values, setValues] = useState<Record<string, string>>(() => initialValues(initial));
@@ -190,23 +231,42 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
   /** The assembled controls description, derived live from the selects. */
   const assembledControls = useMemo(() => buildSecurityControls(values), [values]);
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setValues((v) => ({ ...v, [k]: e.target.value }));
+  // Keep a ref to onChange so every mutator (including the deps-[] imperative
+  // handle) fires the latest callback without re-creating anything per render.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  /** Live-refresh signal: emits the current assembled brief after a change. */
+  const emitChange = (next: Record<string, string>, controls: string) => {
+    onChangeRef.current?.(buildBrief(next, controls));
+  };
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const next = { ...values, [k]: e.target.value };
+    setValues(next);
+    emitChange(next, controlsText);
+  };
 
   const setControl = (cfg: SelectConfig) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setValues((v) => ({ ...v, [cfg.key]: e.target.value }));
+    const next = { ...values, [cfg.key]: e.target.value };
+    setValues(next);
     setControlsText('');
+    emitChange(next, '');
   };
 
   const loadDemo = () => {
     // A fresh random company each press (see lib/demoRandom.ts).
-    setValues(initialValues(randomizeDemoCompany().brief));
+    const next = initialValues(randomizeDemoCompany().brief);
+    setValues(next);
     setControlsText('');
+    emitChange(next, '');
   };
 
   const clearForm = () => {
-    setValues(emptyForm());
+    const next = emptyForm();
+    setValues(next);
     setControlsText('');
+    emitChange(next, '');
   };
 
   const canSubmit = useMemo(() => {
@@ -216,36 +276,7 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
   }, [values, assembledControls, controlsText]);
 
   const submit = () => {
-    const brief: CompanyBrief & PolicyInput = {
-      firm_name: values.firm_name || undefined,
-      industry: values.industry || undefined,
-      technology_dependency: values.technology_dependency || undefined,
-      existing_coverage: values.existing_coverage || undefined,
-      risk_appetite: values.risk_appetite || undefined,
-      // Raw structured extras (sent as hints; the API drops unknown fields)
-      country: values.country || undefined,
-      sensitive_records: values.sensitive_records || undefined,
-      cloud_dependency: values.cloud_dependency || undefined,
-      third_party_dependency: values.third_party_dependency || undefined,
-      mfa_coverage: values.mfa_coverage || undefined,
-      pam: values.pam || undefined,
-      network_segmentation: values.network_segmentation || undefined,
-      backup_strategy: values.backup_strategy || undefined,
-      vulnerability_management: values.vulnerability_management || undefined,
-      incident_response: values.incident_response || undefined,
-    };
-    // security_controls assembled from the structured controls selects,
-    // or the manual override if the user typed their own description.
-    brief.security_controls = controlsText || assembledControls || undefined;
-    if (values.revenue_usd !== '') brief.revenue_usd = Number(values.revenue_usd);
-    if (values.customer_records !== '') brief.customer_records = Number(values.customer_records);
-    if (values.employees !== '') brief.employees = Number(values.employees);
-    brief.previous_incidents = values.previous_incidents === '' ? 0 : Number(values.previous_incidents);
-    // The insurance knobs the engine honors: retention = per-occurrence
-    // deductible, policy limit = annual aggregate limit (see /api/report/executive).
-    if (values.retention !== '') brief.per_occurrence_deductible = Number(values.retention);
-    if (values.policy_limit !== '') brief.annual_aggregate_limit = Number(values.policy_limit);
-    void onSubmit(brief);
+    void onSubmit(buildBrief(values, controlsText));
   };
 
   // Keep a ref to submit so useImperativeHandle always calls the latest
@@ -258,8 +289,10 @@ export const CompanyForm = forwardRef<CompanyFormHandle, CompanyFormProps>(funct
     ref,
     () => ({
       loadCompany: (brief, opts) => {
-        setValues(initialValues(brief));
+        const next = initialValues(brief);
+        setValues(next);
         setControlsText('');
+        emitChange(next, '');
         if (opts?.submit) {
           // Defer so the state lands before we read the assembled controls.
           requestAnimationFrame(() => submitRef.current());

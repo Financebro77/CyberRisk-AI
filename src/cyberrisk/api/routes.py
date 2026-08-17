@@ -1,4 +1,4 @@
-"""HTTP routes for the CyberRisk AI platform.
+"""HTTP routes for the Armageddon platform.
 
 Every route is a thin wrapper over an existing, already-tested tool
 function in ``cyberrisk.agent`` (tools.py / sensitivity_tools.py /
@@ -95,7 +95,7 @@ class ExecutiveReportRequest(CompanyBriefRequest, PolicyTerms):
 @router.get("/health")
 def health() -> dict[str, Any]:
     """Liveness check for the platform."""
-    return {"status": "ok", "service": "CyberRisk AI", "version": __version__}
+    return {"status": "ok", "service": "Armageddon", "version": __version__}
 
 
 @router.post("/score")

@@ -54,6 +54,8 @@ web = ["httpx2>=2.0"]
 knowledge = ["pypdf>=4.0", "python-docx>=1.0"]
 
 [project.scripts]
+armageddon = "cyberrisk.cli:main"
+# Legacy alias — kept so existing installs / scripts keep working.
 cyberrisk = "cyberrisk.cli:main"
 
 [tool.setuptools.packages.find]

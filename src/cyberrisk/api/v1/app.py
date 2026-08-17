@@ -17,7 +17,7 @@ from cyberrisk.api.v1.errors import register_v1_error_handlers
 from cyberrisk.api.v1.routes import router
 
 app = FastAPI(
-    title="CyberRisk AI mobile API",
+    title="Armageddon API",
     description="Versioned assessment surface for mobile clients.",
     version=__version__,
 )

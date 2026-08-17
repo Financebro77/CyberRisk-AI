@@ -1,4 +1,4 @@
-"""Benchmark scenario framework for the CyberRiskAI model.
+"""Benchmark scenario framework for the Armageddon model.
 
 Acts as a Marsh/Aon consultant QA harness: defines synthetic client
 profiles spanning the risk spectrum, runs each through the full pipeline

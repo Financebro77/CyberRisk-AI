@@ -152,6 +152,7 @@ data/raw/
 data/private/
 data/client_data/
 data/processed/
+data/chat.db
 reports/
 *.xlsx
 *.xls

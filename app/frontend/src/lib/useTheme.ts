@@ -4,10 +4,6 @@ export type Theme = 'light' | 'dark';
 
 const STORAGE_KEY = 'cyberrisk-theme';
 
-function systemTheme(): Theme {
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 function readTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -15,7 +11,8 @@ function readTheme(): Theme {
   } catch {
     /* localStorage unavailable */
   }
-  return systemTheme();
+  // Hacker-first default: no stored preference → black.
+  return 'dark';
 }
 
 /** Apply the theme class to <html> so CSS variables switch. */
@@ -26,7 +23,7 @@ function applyTheme(theme: Theme) {
 }
 
 /**
- * Light/dark theme hook with localStorage persistence and a follow-system
+ * Light/dark theme hook with localStorage persistence and a black (hacker)
  * default.  Toggling re-renders consumers and flips `dark` on <html>.
  */
 export function useTheme() {

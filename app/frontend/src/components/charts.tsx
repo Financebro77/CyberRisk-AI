@@ -32,21 +32,21 @@ export function DomainScoresChart({ scores }: { scores: Record<string, number> }
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: '#64748b' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" horizontal={false} />
+        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} />
         <YAxis
           type="category"
           dataKey="name"
           width={150}
-          tick={{ fontSize: 12, fill: '#334155' }}
+          tick={{ fontSize: 12, fill: 'var(--color-chart-axis)' }}
         />
         <Tooltip
           formatter={(value) => [`${value} / 100`, 'Domain score']}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={18}>
           {data.map((d) => (
-            <Cell key={d.name} fill={d.score >= 60 ? '#dc2626' : d.score >= 40 ? '#d97706' : '#16a34a'} />
+            <Cell key={d.name} fill={d.score >= 60 ? 'var(--color-risk-high)' : d.score >= 40 ? 'var(--color-risk-med)' : 'var(--color-risk-low)'} />
           ))}
         </Bar>
       </BarChart>
@@ -63,14 +63,14 @@ export function AalByScenarioChart({ aal }: { aal: Record<string, number> }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-        <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(1)}M`} />
-        <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: '#334155' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(1)}M`} />
+        <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: 'var(--color-chart-axis)' }} />
         <Tooltip
           formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Annual average loss']}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
-        <Bar dataKey="aal" fill="#2563eb" radius={[0, 4, 4, 0]} barSize={18} />
+        <Bar dataKey="aal" fill="var(--color-brand-600)" radius={[0, 4, 4, 0]} barSize={18} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -78,7 +78,7 @@ export function AalByScenarioChart({ aal }: { aal: Record<string, number> }) {
 
 /** Scenario contribution share of EAL — pie/stacked view. */
 export function ScenarioContributionChart({ contribution }: { contribution: Record<string, number> }) {
-  const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6'];
+  const COLORS = ['var(--color-brand-600)', 'var(--color-brand-500)', 'var(--color-brand-400)', '#e8a44a', '#f59e0b', '#10b981', '#c0392b'];
   const data = Object.entries(contribution)
     .map(([key, value], i) => ({
       name: key.replace(/_/g, ' '),
@@ -90,12 +90,12 @@ export function ScenarioContributionChart({ contribution }: { contribution: Reco
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 16, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-30} textAnchor="end" height={60} />
-        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }} interval={0} angle={-30} textAnchor="end" height={60} />
+        <YAxis tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
         <Tooltip
           formatter={(value) => [`${(Number(value) * 100).toFixed(1)}%`, 'Share of EAL']}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={34}>
@@ -118,16 +118,16 @@ export function LossDistributionChart({ quantiles }: { quantiles: Record<string,
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 16, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
-        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} />
+        <YAxis tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
         <Tooltip
           formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Annual loss']}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <Bar dataKey="loss" radius={[4, 4, 0, 0]} barSize={42}>
           {data.map((_, i) => (
-            <Cell key={i} fill={i >= 3 ? '#dc2626' : i >= 1 ? '#d97706' : '#2563eb'} />
+            <Cell key={i} fill={i >= 3 ? 'var(--color-risk-high)' : i >= 1 ? 'var(--color-risk-med)' : 'var(--color-brand-600)'} />
           ))}
         </Bar>
       </BarChart>
@@ -142,20 +142,20 @@ export function LossExceedanceChart({ points }: { points: Array<{ loss: number; 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={data} margin={{ top: 8, right: 16, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" />
         <XAxis
           dataKey="loss"
           type="number"
           scale="log"
           domain={['dataMin', 'dataMax']}
           tickFormatter={(v) => `$${Number(v) >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : `${(v / 1e3).toFixed(0)}K`}`}
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
         />
         <YAxis
           type="number"
           domain={[0, 1]}
           tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-          tick={{ fontSize: 12, fill: '#64748b' }}
+          tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }}
         />
         <Tooltip
           formatter={(value, name) => [
@@ -163,20 +163,20 @@ export function LossExceedanceChart({ points }: { points: Array<{ loss: number; 
             name === 'prob' ? 'P(loss ≥)' : 'Loss level',
           ]}
           labelFormatter={(v) => `Loss: $${Number(v).toLocaleString()}`}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <ReferenceLine
           y={0.01}
-          stroke="#dc2626"
+          stroke="var(--color-risk-high)"
           strokeDasharray="4 4"
-          label={{ value: '1-in-100', position: 'insideBottomRight', fontSize: 11, fill: '#dc2626' }}
+          label={{ value: '1-in-100', position: 'insideBottomRight', fontSize: 11, fill: 'var(--color-risk-high)' }}
         />
         <Line
           type="monotone"
           dataKey="prob"
-          stroke="#2563eb"
+          stroke="var(--color-brand-600)"
           strokeWidth={2.5}
-          dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }}
+          dot={{ r: 3, fill: 'var(--color-brand-600)', strokeWidth: 0 }}
           activeDot={{ r: 5 }}
         />
       </ComposedChart>
@@ -199,21 +199,21 @@ export function InsuranceWaterfallChart({
   // Waterfall via a hidden "base" series + visible bars.  Each step positions
   // the visible bar above the running total from the previous step.
   const steps: Array<{ name: string; base: number; value: number; fill: string }> = [
-    { name: 'Ground-up EAL', base: 0, value: groundUp, fill: '#1e293b' },
-    { name: 'Retention', base: groundUp - retention, value: retention, fill: '#dc2626' },
-    { name: 'Insurer payment', base: groundUp - retention - insurerPayment, value: insurerPayment, fill: '#2563eb' },
+    { name: 'Ground-up EAL', base: 0, value: groundUp, fill: 'var(--color-ink-600)' },
+    { name: 'Retention', base: groundUp - retention, value: retention, fill: 'var(--color-risk-high)' },
+    { name: 'Insurer payment', base: groundUp - retention - insurerPayment, value: insurerPayment, fill: 'var(--color-brand-600)' },
     { name: 'Residual', base: 0, value: residual, fill: '#f59e0b' },
   ];
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={steps} margin={{ top: 8, right: 16, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-14} textAnchor="end" height={56} />
-        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }} interval={0} angle={-14} textAnchor="end" height={56} />
+        <YAxis tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
         <Tooltip
           formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Amount']}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="base" stackId="wf" fill="transparent" tooltipType="none" legendType="none" />
@@ -242,16 +242,16 @@ export function BeforeAfterChart({
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 16, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
-        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} />
+        <YAxis tick={{ fontSize: 12, fill: 'var(--color-chart-tick)' }} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} />
         <Tooltip
           formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name]}
-          contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+          contentStyle={{ borderRadius: 8, border: '1px solid var(--color-chart-grid)', fontSize: 12 }}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="Current state" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={26} />
-        <Bar dataKey="After control" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={26} />
+        <Bar dataKey="Current state" fill="var(--color-ink-400)" radius={[4, 4, 0, 0]} barSize={26} />
+        <Bar dataKey="After control" fill="var(--color-brand-600)" radius={[4, 4, 0, 0]} barSize={26} />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -258,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
     """CLI: python -m cyberrisk.knowledge.embed_pipeline [--config PATH] [--force] [--doc ID]"""
     parser = argparse.ArgumentParser(
         prog="cyberrisk.knowledge.embed_pipeline",
-        description="CyberRisk AI knowledge embedding pipeline (run after ingest)",
+        description="Armageddon knowledge embedding pipeline (run after ingest)",
     )
     parser.add_argument("--config", default=None, help="IngestConfig YAML path")
     parser.add_argument("--force", action="store_true", help="Re-embed all chunks")

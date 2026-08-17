@@ -59,7 +59,7 @@ class ModelMechanics:
         return (
             "This assessment uses an internally developed stochastic cyber risk "
             "model. Model assumptions, parameter mappings and simulation logic "
-            "are documented within the CyberRisk framework.\n\n"
+            "are documented within the Armageddon framework.\n\n"
             f"Scoring methodology: {self.scoring_methodology}\n"
             f"Frequency adjustments: {self.frequency_adjustments}\n"
             f"Severity adjustments: {self.severity_adjustments}\n"

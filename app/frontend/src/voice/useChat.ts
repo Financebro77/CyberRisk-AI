@@ -15,7 +15,7 @@ import type { ChatToolTrace, TranscriptMessage } from '../lib/types';
 
 /** Exact user-facing error strings — exported so UI and tests share them. */
 export const BACKEND_UNAVAILABLE =
-  'The CyberRisk AI service is currently unavailable. Please try again.';
+  'The Armageddon service is currently unavailable. Please try again.';
 export const RECOGNITION_FAILURE = "I couldn't hear that clearly. Please try again.";
 export const INSUFFICIENT_MODEL_INFO =
   'I need a little more information before I can calculate the risk.';

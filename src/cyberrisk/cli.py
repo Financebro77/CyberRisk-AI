@@ -1,6 +1,7 @@
-"""CyberRisk AI Consultant — global command-line launcher.
+"""Armageddon — global command-line launcher.
 
-Typing ``cyberrisk`` in a terminal starts the interactive consultant.
+Typing ``armageddon`` in a terminal starts the interactive consultant
+(``cyberrisk`` remains as a legacy alias).
 
 This module is an INTERFACE LAYER ONLY.  It:
     * checks that the core services are available (lightweight capability
@@ -29,7 +30,7 @@ from cyberrisk.llm.factory import is_configured
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 HEADER = "=" * 50
-TITLE = "CyberRisk AI Consultant"
+TITLE = "Armageddon"
 SUBTITLE = "Commercial Cyber Risk Advisory Platform"
 
 HELP_TEXT = """Commands:
@@ -127,7 +128,7 @@ def _clear_screen() -> None:
 
 
 def main() -> int:
-    """Launch the CyberRisk AI Consultant."""
+    """Launch the Armageddon consultant."""
     # Install the sanitised root logger so no log line can leak a secret or
     # personal data (see cyberrisk.privacy).
     try:

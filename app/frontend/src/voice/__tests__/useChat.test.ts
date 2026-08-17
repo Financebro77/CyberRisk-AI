@@ -224,7 +224,7 @@ describe('useChat', () => {
 describe('exact error strings', () => {
   it('matches the required verbatim strings', () => {
     expect(BACKEND_UNAVAILABLE).toBe(
-      'The CyberRisk AI service is currently unavailable. Please try again.',
+      'The Armageddon service is currently unavailable. Please try again.',
     );
     expect(RECOGNITION_FAILURE).toBe("I couldn't hear that clearly. Please try again.");
   });

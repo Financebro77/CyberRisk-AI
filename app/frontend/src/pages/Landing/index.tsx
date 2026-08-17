@@ -1,79 +1,100 @@
 import { Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { GlitchText } from '../../components/GlitchText';
+import { ArmageddonMark } from '../../components/ArmageddonMark';
+import { Terminal } from '../../components/Terminal';
+import { Marquee } from '../../components/Marquee';
+import { SignalReadout } from '../../components/SignalReadout';
 
 /**
- * Landing page — a professional consulting-style introduction.
- * Three value-prop sections + a CTA, in the Marsh/Aon advisory tone.
+ * Landing page — adapted to the four reference mockups ("网络风险AI网页着陆页设计").
+ *
+ * Shared language across the reference mockups: an ash-black battlefield
+ * canvas, gold/amber as the divine-judgement accent, blood red as the threat/
+ * attack accent, and a giant display "CYBER ATTACK" headline.  The signature
+ * element is the two-tone headline — warm gold "CYBER" flowing into molten red
+ * "ATTACK" — with everything else disciplined: a threat-detected pill, a gold
+ * "Run Risk Scan" CTA, the terminal proof, a live dashboard panel, the threat
+ * marquee, the loss-curve signal readout, and dark feature panels.
  */
+
 function Nav() {
   return (
-    <header className="sticky top-0 z-50 border-b border-ink-200 bg-ink-50/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
-            <ShieldCheck className="h-4.5 w-4.5" />
-          </div>
-          <span className="text-sm font-semibold tracking-wide text-ink-900">CyberRisk AI</span>
+          <ArmageddonMark className="h-8 w-auto shrink-0" />
+          <span className="font-display text-base font-bold tracking-wide text-white [filter:drop-shadow(0_0_6px_rgba(248,216,128,0.6))]">
+            ARMAGEDDON
+          </span>
         </Link>
-        <nav className="hidden items-center gap-8 text-sm text-ink-600 md:flex">
-          <Link to="/model" className="transition-colors hover:text-ink-900">How the model works</Link>
-          <Link to="/consult" className="transition-colors hover:text-ink-900">AI Cyber Risk Consultant</Link>
+        <nav className="hidden items-center gap-8 text-sm text-white/60 md:flex">
+          <Link to="/model" className="transition-colors hover:text-white">
+            How the model works
+          </Link>
+          <Link to="/consult?tab=chat" className="transition-colors hover:text-white">
+            AI Cyber Risk Consultant
+          </Link>
         </nav>
-        <Link
-          to="/consult"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-500"
-        >
-          Start assessment <ArrowRight className="h-3.5 w-3.5" />
+        <Link to="/consult" className="scan-btn text-xs">
+          Run assessment <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     </header>
   );
 }
 
-/** Night Ledger signature — the modelled loss distribution drawn as a
- *  patient line with the tail shaded, marked at 1-in-100 and 1-in-1000. */
-function LossCurve() {
+/** Compact live dashboard panel — the reference mockups' threat/risk dashboard. */
+function HeroDashboard() {
   return (
-    <div className="mx-auto mt-14 max-w-2xl">
-      <svg
-        viewBox="0 0 720 140"
-        className="h-28 w-full text-accent"
-        role="img"
-        aria-label="Illustration of the modelled annual loss distribution, marked at the 1-in-100 and 1-in-1000 year losses"
-      >
+    <div
+      className="rounded-xl border border-accent/25 bg-ink-100/70 p-4 font-mono"
+      role="img"
+      aria-label="Live cyber risk dashboard: risk score, active threats, shield status"
+    >
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-ink-600">
+        <span>risk dashboard</span>
+        <span className="flex items-center gap-1.5 text-signal">
+          <span className="status-dot h-1.5 w-1.5 rounded-full bg-signal" /> live
+        </span>
+      </div>
+      <svg viewBox="0 0 320 90" className="mt-3 h-20 w-full" aria-hidden="true">
         <defs>
-          <linearGradient id="tail-fill" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.28" />
+          <linearGradient id="hd-line" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#f6c46a" />
+            <stop offset="100%" stopColor="#e8c078" />
+          </linearGradient>
+          <linearGradient id="hd-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#e8c078" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#e8c078" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {/* tail shading under the steep part of the curve */}
         <path
-          d="M540 30 S 660 10, 720 5 L 720 140 L 540 140 Z"
-          fill="url(#tail-fill)"
+          d="M0 70 L40 58 L80 62 L120 44 L160 50 L200 30 L240 36 L280 16 L320 10 L320 90 L0 90 Z"
+          fill="url(#hd-fill)"
         />
-        {/* the loss density: most years quiet, then the rare steep fall */}
         <path
-          d="M0 116 C 140 114, 220 100, 300 86 C 380 72, 460 48, 540 30 C 600 18, 660 10, 720 5"
+          d="M0 70 L40 58 L80 62 L120 44 L160 50 L200 30 L240 36 L280 16 L320 10"
           fill="none"
-          stroke="currentColor"
+          stroke="url(#hd-line)"
           strokeWidth="2"
           strokeLinecap="round"
         />
-        {/* reference ticks on the tail */}
-        <line x1="576" y1="0" x2="576" y2="132" stroke="currentColor" strokeOpacity="0.35" strokeDasharray="3 4" />
-        <line x1="672" y1="0" x2="672" y2="132" stroke="var(--color-risk-high)" strokeOpacity="0.7" strokeDasharray="3 4" />
+        <circle cx="280" cy="16" r="4" fill="#fe4543" />
       </svg>
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-500">
-        <span className="flex items-center gap-1.5">
-          <span className="h-0.5 w-5 rounded-full bg-accent" /> Loss distribution
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-px w-5 bg-accent/60" /> 1-in-100-year
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-px w-5 bg-risk-high" /> 1-in-1000-year
-        </span>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-[11px]">
+        <div>
+          <div className="text-ink-600">RISK SCORE</div>
+          <div className="text-xl font-bold text-white">92</div>
+        </div>
+        <div>
+          <div className="text-ink-600">ACTIVE THREAT</div>
+          <div className="text-xl font-bold text-alert">18</div>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-signal/30 bg-signal/10 px-3 py-2 text-[11px] text-signal">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        AI SHIELD ONLINE
       </div>
     </div>
   );
@@ -81,69 +102,160 @@ function LossCurve() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-ink-100 bg-ink-50">
-      {/* Night Ledger signature: a soft phosphor glow behind the headline */}
-      <div className="hero-glow pointer-events-none absolute inset-x-0 top-0 h-80" />
-      <div className="relative mx-auto max-w-5xl px-6 py-20 text-center lg:px-8 lg:py-28">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          Quantitative cyber risk advisory
-        </p>
-        <h1 className="mx-auto mt-5 max-w-3xl font-serif text-4xl font-medium leading-tight tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
-          Put a defensible number on cyber risk.
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-600">
-          CyberRisk AI helps boards and risk leaders quantify cyber exposure in dollars,
-          structure insurance, and act with confidence.
-        </p>
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            to="/consult"
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition-colors hover:bg-brand-500"
-          >
-            Start your assessment <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            to="/model"
-            className="inline-flex items-center gap-2 rounded-lg border border-ink-300 px-6 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-500 hover:text-accent"
-          >
-            How the model works
-          </Link>
+    <section className="relative overflow-hidden bg-black text-white">
+      <div className="crt-scanlines pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="hero-glow pointer-events-none absolute inset-x-0 top-0 h-[75vh]" />
+      <div className="relative mx-auto max-w-6xl px-6 pt-14 lg:px-8">
+        {/* Reference #2's red threat pill, top-right. */}
+        <div className="flex justify-end">
+          <div className="threat-pill font-mono text-[11px] uppercase tracking-[0.18em]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/90" />
+            <span>THREAT DETECTED</span>
+            <span className="text-white/75">RISK LEVEL CRITICAL</span>
+          </div>
         </div>
 
-        <LossCurve />
+        <div className="mx-auto max-w-4xl pt-10 text-center lg:pt-16">
+          <p className="font-mono text-xs font-semibold uppercase tracking-[0.35em] text-accent">
+            Quantitative cyber risk advisory
+          </p>
+          <h1 className="mt-5 font-display text-[clamp(3.5rem,15vw,10rem)] font-bold uppercase leading-[0.92] tracking-tight">
+            <GlitchText text="CYBER ATTACK">
+              <span className="cyber-gradient">CYBER</span>
+              <span className="cyber-red"> ATTACK</span>
+            </GlitchText>
+          </h1>
+          <p className="mt-5 text-lg tracking-wide text-white/85 sm:text-xl">
+            Identify. Analyze. Neutralize.
+          </p>
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-white/60">
+            Armageddon turns cyber exposure into a dollar number boards can
+            defend: expected annual loss, tail risk, and insurance — quantified,
+            not guessed.
+          </p>
+
+          <div className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
+            <label htmlFor="scan-domain" className="sr-only">
+              Enter your company profile to scan
+            </label>
+            <input
+              id="scan-domain"
+              type="text"
+              placeholder="Enter your company profile to scan…"
+              className="w-full flex-1 rounded-full border border-ink-400/50 bg-ink-100/70 px-5 py-3 text-sm text-white placeholder:text-ink-600 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+            <Link to="/consult" className="scan-btn shrink-0">
+              Run Risk Scan <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Live console: the terminal proof beside a compact dashboard panel. */}
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 pb-16 pt-12 lg:flex-row lg:items-stretch">
+          <div className="w-full flex-1">
+            <Terminal />
+          </div>
+          <div className="w-full max-w-sm flex-1">
+            <HeroDashboard />
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-function WhatIs() {
+/** The model's loss curve as a signal readout section. */
+function SignalSection() {
   return (
     <section className="py-16 lg:py-20">
-      <div className="mx-auto max-w-5xl px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">01 — The risk</p>
-        <h2 className="mt-4 font-serif text-3xl font-medium tracking-tight text-ink-900 lg:text-4xl">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        <p className="text-center font-mono text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          &gt; the shape of the risk
+        </p>
+        <h2 className="mt-4 text-center font-display text-3xl font-bold uppercase tracking-wide text-ink-900 lg:text-4xl">
+          A loss curve you can read at a glance
+        </h2>
+        <SignalReadout />
+      </div>
+    </section>
+  );
+}
+
+const WHAT_IS = [
+  {
+    title: 'It is financial, not just technical',
+    body: 'A breach is a cost event — response, notification, extortion, business interruption, regulatory fines, and lost revenue. The question a board asks is "what could this cost us?", not "how many alerts did we get?".',
+  },
+  {
+    title: 'It is probabilistic, not binary',
+    body: 'No company is "safe" or "hacked". There is a distribution of possible outcomes, from a quiet year to a catastrophic one. Managing cyber risk is managing the shape of that distribution.',
+  },
+  {
+    title: 'It is concentrated in the tail',
+    body: 'Most years are quiet. The risk lives in the rare, severe event that can exceed what a firm planned for — the one that threatens solvency or a licence to operate.',
+  },
+];
+
+const WHY_QUANTIFY = [
+  {
+    title: 'It makes risk a business decision',
+    body: 'Expected annual loss, a 1-in-100-year loss, and the residual exposure after insurance turn cyber from a security topic into a board decision with a budget, an owner, and a target.',
+  },
+  {
+    title: 'It sizes insurance correctly',
+    body: 'A limit, retention, and sub-limit chosen against a modelled loss distribution are defensible. One chosen by guesswork is a liability for the adviser and the firm.',
+  },
+  {
+    title: 'It prioritises the controls that matter',
+    body: 'Quantification shows which exposures drive the loss — ransomware, business interruption, data breach — so security investment follows the risk, not the vendor.',
+  },
+];
+
+/** A feature card on the dark panel — big stacked display title, prose body. */
+function FeatureCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div>
+      <h3 className="font-display text-xl font-bold uppercase leading-tight tracking-wide text-ink-900">
+        {title}
+      </h3>
+      <p className="mt-3 text-sm leading-relaxed text-ink-600">{body}</p>
+    </div>
+  );
+}
+
+/** A terminal-window card: quiet chrome dots, mono heading, prose body. */
+function TerminalCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="card p-5">
+      <div className="mb-3 flex gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-ink-300" />
+        <span className="h-2 w-2 rounded-full bg-ink-300" />
+        <span className="h-2 w-2 rounded-full bg-ink-300" />
+      </div>
+      <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-ink-900">
+        {title}
+      </h3>
+      <p className="mt-3 text-sm leading-relaxed text-ink-600">{body}</p>
+    </div>
+  );
+}
+
+function WhatIs() {
+  return (
+    <section className="py-16 lg:py-24">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        <p className="text-center font-mono text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          &gt; the risk
+        </p>
+        <h2 className="mt-4 text-center font-display text-3xl font-bold uppercase tracking-wide text-ink-900 lg:text-4xl">
           What cyber risk really means
         </h2>
-        <div className="mt-6 grid gap-8 md:grid-cols-3">
-          {[
-            {
-              title: 'It is financial, not just technical',
-              body: 'A breach is a cost event — response, notification, extortion, business interruption, regulatory fines, and lost revenue. The question a board asks is "what could this cost us?", not "how many alerts did we get?".',
-            },
-            {
-              title: 'It is probabilistic, not binary',
-              body: 'No company is "safe" or "hacked". There is a distribution of possible outcomes, from a quiet year to a catastrophic one. Managing cyber risk is managing the shape of that distribution.',
-            },
-            {
-              title: 'It is concentrated in the tail',
-              body: 'Most years are quiet. The risk lives in the rare, severe event that can exceed what a firm planned for — the one that threatens solvency or a licence to operate.',
-            },
-          ].map((item) => (
-            <div key={item.title} className="card p-6">
-              <h3 className="text-base font-semibold text-ink-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-ink-600">{item.body}</p>
-            </div>
-          ))}
+        <div className="mt-8 rounded-2xl border border-ink-200/60 bg-gradient-to-b from-ink-200/70 via-ink-100/50 to-ink-100/30 p-8 md:p-10">
+          <div className="grid gap-10 md:grid-cols-3">
+            {WHAT_IS.map((item) => (
+              <FeatureCard key={item.title} title={item.title} body={item.body} />
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -152,31 +264,17 @@ function WhatIs() {
 
 function WhyQuantify() {
   return (
-    <section className="border-y border-ink-100 bg-ink-50 py-16 lg:py-20">
-      <div className="mx-auto max-w-5xl px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">02 — Why it matters</p>
-        <h2 className="mt-4 font-serif text-3xl font-medium tracking-tight text-ink-900 lg:text-4xl">
+    <section className="border-y border-ink-200 bg-ink-50 py-16 lg:py-20">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          &gt; why it matters
+        </p>
+        <h2 className="mt-4 font-display text-3xl font-bold uppercase tracking-wide text-ink-900 lg:text-4xl">
           Why quantifying cyber risk matters
         </h2>
         <div className="mt-6 space-y-4">
-          {[
-            {
-              title: 'It makes risk a business decision',
-              body: 'Expected annual loss, a 1-in-100-year loss, and the residual exposure after insurance turn cyber from a security topic into a board decision with a budget, an owner, and a target.',
-            },
-            {
-              title: 'It sizes insurance correctly',
-              body: 'A limit, retention, and sub-limit chosen against a modelled loss distribution are defensible. One chosen by guesswork is a liability for the adviser and the firm.',
-            },
-            {
-              title: 'It prioritises the controls that matter',
-              body: 'Quantification shows which exposures drive the loss — ransomware, business interruption, data breach — so security investment follows the risk, not the vendor.',
-            },
-          ].map((item) => (
-            <div key={item.title} className="card p-6">
-              <h3 className="text-base font-semibold text-ink-900">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-600">{item.body}</p>
-            </div>
+          {WHY_QUANTIFY.map((item) => (
+            <TerminalCard key={item.title} title={item.title} body={item.body} />
           ))}
         </div>
       </div>
@@ -186,21 +284,27 @@ function WhyQuantify() {
 
 function Cta() {
   return (
-    <section className="py-16 lg:py-20">
+    <section className="py-16 lg:py-24">
       <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
-        <h2 className="font-serif text-3xl font-medium tracking-tight text-ink-900 lg:text-4xl">
-          Ready to see your cyber exposure in dollars?
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          &gt; ready when you are
+        </p>
+        <h2 className="mt-4 font-display text-3xl font-bold uppercase tracking-wide text-ink-900 lg:text-4xl">
+          See your cyber exposure in dollars.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-ink-600">
-          Answer a few questions about your company and the consultant will return a
+          Answer a few questions about your company and the consultant returns a
           risk score, expected annual loss, tail risk, and insurance guidance.
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Link to="/consult" className="scan-btn">
+            Run Risk Scan <ArrowRight className="h-4 w-4" />
+          </Link>
           <Link
-            to="/consult"
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition-colors hover:bg-brand-500"
+            to="/model"
+            className="inline-flex items-center gap-2 rounded-full border border-ink-300 px-6 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent hover:text-accent"
           >
-            Start your assessment <ArrowRight className="h-4 w-4" />
+            How the model works
           </Link>
         </div>
       </div>
@@ -210,13 +314,17 @@ function Cta() {
 
 function Footer() {
   return (
-    <footer className="border-t border-ink-100 bg-ink-50 py-8">
-      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 text-xs text-ink-500 sm:flex-row lg:px-8">
-        <span>CyberRisk AI — Commercial Cyber Risk Advisory Platform</span>
+    <footer className="border-t border-ink-200 bg-ink-100/50 py-8 font-mono text-xs text-ink-500">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 sm:flex-row lg:px-8">
+        <span>ARMAGEDDON — Commercial Cyber Risk Advisory Platform</span>
         <span className="flex items-center gap-2">
-          <Link to="/model" className="transition-colors hover:text-ink-900">How the model works</Link>
+          <Link to="/model" className="transition-colors hover:text-accent">
+            how the model works
+          </Link>
           <span>·</span>
-          <Link to="/consult" className="transition-colors hover:text-ink-900">AI Consultant</Link>
+          <Link to="/consult?tab=chat" className="transition-colors hover:text-accent">
+            AI consultant
+          </Link>
         </span>
       </div>
     </footer>
@@ -225,9 +333,11 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-ink-50 font-sans">
+    <div className="min-h-screen bg-ink-50 font-sans text-ink-900">
       <Nav />
       <Hero />
+      <Marquee />
+      <SignalSection />
       <WhatIs />
       <WhyQuantify />
       <Cta />

@@ -94,7 +94,7 @@ cannot loop forever.
 
 ### 2.3 The tool registry
 
-The agent can call six tools (`tools.py`, `TOOL_SCHEMAS`):
+The agent can call seven tools (`tools.py`, `TOOL_SCHEMAS`):
 
 | Tool | What it does |
 |---|---|
@@ -104,6 +104,7 @@ The agent can call six tools (`tools.py`, `TOOL_SCHEMAS`):
 | `generate_risk_report` | Writes the Excel assessment workbook |
 | `run_control_improvement_scenario` | Models the effect of a control change (e.g. "implement MFA") — before/after EAL, VaR, ES |
 | `search_incidents` | Searches the curated incident index, returning citable structured facts |
+| `generate_demo_assessment` | Fabricates a fictional demo company (safe sectors only) and runs the real engine on it — chat-only, DEMO-tagged, never for a real client |
 
 ### 2.4 Why the numbers are trustworthy
 

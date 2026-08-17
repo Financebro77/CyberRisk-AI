@@ -861,6 +861,72 @@ def generate_risk_report(
     }
 
 
+def generate_demo_assessment(
+    sector: str | None = None,
+    n_years: int | None = None,
+) -> dict:
+    """Tool: fabricate a fictional demo company and run the REAL engine on it.
+
+    Fake company, real score math.  Guardrailed (see cyberrisk/agent/demo.py):
+
+        * Safe sectors only -- critical national infrastructure (defense,
+          intelligence, nuclear, power grid, weapons) is excluded in code.
+        * Fictional names only, never a real firm's name.
+        * Chat-only -- never writes a report workbook (no Excel download).
+        * Output carries the DEMO disclaimer and the standard metric keys
+          (eal, var_99, es_99, aal_by_scenario, client_retained_loss) so the
+          controller's hallucination backstop validates the LLM's figures.
+    """
+    from cyberrisk.agent.demo import (
+        DEMO_DISCLAIMER,
+        SAFE_SECTORS,
+        demo_company,
+    )
+
+    if sector is not None:
+        chosen = next(
+            (s for s in SAFE_SECTORS if s.lower() == sector.strip().lower()), None
+        )
+        if chosen is None:
+            return {
+                "status": "error",
+                "error": (
+                    f"Sector {sector!r} is excluded from demo fabrication "
+                    f"(critical national infrastructure). Available demo sectors: "
+                    f"{', '.join(SAFE_SECTORS)}."
+                ),
+            }
+        sector = chosen
+
+    brief, policy = demo_company(sector=sector)
+    sim = run_loss_simulation(brief, n_years=n_years)
+    if sim.get("status") != "ok":
+        return {"status": "error", "error": sim.get("message", "demo simulation failed")}
+    ins = analyse_insurance_structure(brief, policy=policy, n_years=n_years)
+
+    data = dict(sim)
+    data.update(
+        {
+            "demo": True,
+            "disclaimer": DEMO_DISCLAIMER,
+            "firm_name": brief.firm_name,
+            "industry": brief.industry,
+            "revenue_usd": brief.revenue_usd,
+            "customer_records": brief.customer_records,
+            "policy": {
+                "per_occurrence_deductible": policy.per_occurrence_deductible,
+                "annual_aggregate_limit": policy.annual_aggregate_limit,
+            },
+        }
+    )
+    if ins.get("status") == "ok":
+        data["insurance"] = ins
+        # Top-level so the controller's post-guard validates retained-loss
+        # claims (it reads client_retained_loss at the result root).
+        data["client_retained_loss"] = ins["client_retained_loss"]
+    return data
+
+
 # ---------------------------------------------------------------------------
 # Tool registry (JSON-Schema for DeepSeek function calling)
 # ---------------------------------------------------------------------------
@@ -951,6 +1017,18 @@ TOOL_SCHEMAS: list[dict] = [
             "attack_type": {"type": "string", "description": "e.g. 'ransomware', 'BEC', 'breach', 'supply-chain'"},
             "company": {"type": "string", "description": "Company name (substring)"},
             "limit": {"type": "integer", "description": "Max incidents to return (default 3)"},
+        },
+    ),
+    _tool(
+        "generate_demo_assessment",
+        "Fabricate a fictional demo company (safe sectors only: Healthcare, Financial Services, "
+        "Manufacturing, Retail, Energy, Logistics) and run the REAL engine on it, returning a full "
+        "assessment tagged as DEMO / fictional data. Call ONLY when the user explicitly asks for a "
+        "demo, demonstration, example, or sample company. Never call this for a real client, and "
+        "never present its results as a real assessment.",
+        {
+            "sector": {"type": "string", "description": "Optional demo sector (Healthcare, Financial Services, Manufacturing, Retail, Energy, Logistics). Omit for a random one."},
+            "n_years": {"type": "integer", "description": "Simulation years (default 100000)"},
         },
     ),
 ]

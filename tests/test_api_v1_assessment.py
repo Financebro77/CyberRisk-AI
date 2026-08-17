@@ -36,7 +36,7 @@ def test_health_is_open_and_versioned(client):
     body = resp.json()
     assert body["status"] == "ok"
     assert body["api_version"] == "v1"
-    assert body["service"] == "CyberRisk AI"
+    assert body["service"] == "Armageddon"
 
 
 def test_health_is_auth_exempt(client, monkeypatch):

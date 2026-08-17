@@ -1,80 +1,181 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Big Shoulders";
+  src: url("/fonts/BigShoulders-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Big Shoulders";
+  src: url("/fonts/BigShoulders-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gloock";
+  src: url("/fonts/Gloock-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* The Armageddon identity face (user-provided; single-weight 1993 freeware by
+   James Shields, readme kept in /fonts).  Registered at both 400 and 700 so the
+   browser never synthesizes a fake bold on top of a decorative face. */
+@font-face {
+  font-family: "Armageddon";
+  src: url("/fonts/Armgedon.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Armageddon";
+  src: url("/fonts/Armgedon.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
-  /* Consulting design tokens — deep navy ink, slate surface, cyan accent. */
-  --color-ink-950: #0b1220;
-  --color-ink-900: #0f172a;
-  --color-ink-800: #1e293b;
-  --color-ink-700: #334155;
-  --color-ink-600: #475569;
-  --color-ink-500: #64748b;
-  --color-ink-400: #94a3b8;
-  --color-ink-300: #cbd5e1;
-  --color-ink-200: #e2e8f0;
-  --color-ink-100: #f1f5f9;
-  --color-ink-50: #f8fafc;
+  /* Warm near-black identity — ink is a cream-toned warm scale.  These light
+     values are the fallback for light-mode users; `.dark` re-tunes them to the
+     Armageddon battlefield palette (ash-black, gold, threat-red). */
+  --color-ink-950: #1a140d;
+  --color-ink-900: #241d14;
+  --color-ink-800: #332a1e;
+  --color-ink-700: #463a2b;
+  --color-ink-600: #5c4e3c;
+  --color-ink-500: #6f6250;
+  --color-ink-400: #8a7b67;
+  --color-ink-300: #a99a85;
+  --color-ink-200: #c9bdaa;
+  --color-ink-100: #e4dbcc;
+  --color-ink-50: #f6f1e8;
 
-  /* Brand = the cyan fintech accent (buttons, focus, active states).
-     brand-600 is chosen so `bg-brand-600 text-white` keeps AA contrast in
-     both modes (light: cyan-700, dark: cyan-800 on navy). */
-  --color-brand-700: #155e75;
-  --color-brand-600: #0e7490;
-  --color-brand-500: #0891b2;
-  --color-brand-400: #06b6d4;
-  --color-brand-300: #22d3ee;
-  --color-brand-200: #67e8f9;
-  --color-brand-100: #a5f3fc;
-  --color-brand-50: #cffafe;
+  /* Brand = gold/bronze — the "gold of judgement" accent.  brand-600 keeps
+     white text AA in both modes. */
+  --color-brand-700: #7a4a20;
+  --color-brand-600: #96591f;
+  --color-brand-500: #b87330;
+  --color-brand-400: #d0a050;
+  --color-brand-300: #e0c080;
+  --color-brand-200: #f0d090;
+  --color-brand-100: #fdf0d8;
+  --color-brand-50: #fff8e8;
 
-  /* Accent = the signal colour for small text / eyebrows / highlights.
-     Single value, flipped in .dark for contrast on each surface. */
-  --color-accent: #0e7490;
+  /* Accent = amber for eyebrows / links / glows. */
+  --color-accent: #c08040;
+  /* Signal = terminal/status green. */
+  --color-signal: #16a34a;
+  /* Alert = threat red for the landing's attack/risk accents. */
+  --color-alert: #d0312d;
+  --color-alert-bright: #ef5b57;
+  --color-alert-deep: #7a1410;
 
   --color-risk-low: #16a34a;
   --color-risk-med: #d97706;
   --color-risk-high: #dc2626;
   --color-risk-crit: #7f1d1d;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman",
-    serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+  /* Chart surfaces — recharts consumes these via var(--color-…) and they flip
+     in .dark so grids/ticks stay legible on the black canvas. */
+  --color-chart-grid: #e8dfce;
+  --color-chart-tick: #8a7b67;
+  --color-chart-axis: #5c4e3c;
+
+  /* Self-hosted faces (China-safe; canvas-design OFL bundle plus the
+     user-provided Armageddon face).  Bricolage Grotesque = body, Geist Mono =
+     terminal/data, Gloock = serif display, Armageddon = the identity/display
+     face (hero, headings, brand wordmark). */
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Gloock", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;
+  --font-display: "Armageddon", "Big Shoulders", "Bricolage Grotesque",
+    ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ---------------------------------------------------------------------------
    Dark theme — overrides the ink scale so the whole app (which uses ink-*)
-   inverts.  `.dark` is toggled on <html> by useTheme().
+   inverts.  `.dark` is toggled on <html> by useTheme() and by the inline
+   index.html bootstrap (black is the default identity).  The base (light)
+   values above are the fallback for light-mode users.
    --------------------------------------------------------------------------- */
 .dark {
-  --color-ink-50: #0b1220;
-  --color-ink-100: #0f172a;
-  --color-ink-200: #1e293b;
-  --color-ink-300: #334155;
-  --color-ink-400: #64748b;
-  --color-ink-500: #94a3b8;
-  --color-ink-600: #cbd5e1;
-  --color-ink-700: #e2e8f0;
-  --color-ink-800: #f1f5f9;
-  --color-ink-900: #f8fafc;
-  --color-ink-950: #ffffff;
+  /* Ash-black battlefield ink scale — the Armageddon identity.  ink-50 is the
+     page canvas (warm near-black), rising through bronze surfaces to cream. */
+  --color-ink-50: #0a0b0d;
+  --color-ink-100: #0d0f10;
+  --color-ink-200: #141008;
+  --color-ink-300: #181008;
+  --color-ink-400: #201810;
+  --color-ink-500: #2e2118;
+  --color-ink-600: #4a3523;
+  --color-ink-700: #7a5c38;
+  --color-ink-800: #b8976a;
+  --color-ink-900: #e2d5c0;
+  --color-ink-950: #f8f5ee;
 
-  --color-brand-100: #164e63;
-  --color-brand-200: #155e75;
-  --color-brand-300: #0e7490;
-  --color-brand-400: #0891b2;
-  --color-brand-500: #0891b2;
-  --color-brand-600: #155e75;
-  --color-brand-700: #0e7490;
+  /* Brand gold in dark — lighter tints flip for text-on-dark; brand-600 stays
+     a bronze button that keeps white text readable. */
+  --color-brand-700: #e8c078;
+  --color-brand-600: #96591f;
+  --color-brand-500: #b87330;
+  --color-brand-400: #d0a050;
+  --color-brand-300: #e0c080;
+  --color-brand-200: #f0d090;
+  --color-brand-100: #4a3016;
+  --color-brand-50: #2a1c0c;
 
-  --color-accent: #22d3ee;
+  --color-accent: #e8a44a;
+  --color-signal: #4ade80;
 
-  /* Risk tones brightened so chips read on navy surfaces. */
+  /* Alert red — threat pills / attack accents on dark surfaces. */
+  --color-alert: #fe4543;
+  --color-alert-bright: #ff7073;
+  --color-alert-deep: #8f1c23;
+
+  /* Risk tones brightened so chips read on the black surfaces. */
   --color-risk-low: #4ade80;
-  --color-risk-med: #fbbf24;
-  --color-risk-high: #f87171;
-  --color-risk-crit: #fca5a5;
+  --color-risk-med: #f6c46a;
+  --color-risk-high: #fe4543;
+  --color-risk-crit: #b22128;
+
+  --color-chart-grid: #241d14;
+  --color-chart-tick: #8a7b67;
+  --color-chart-axis: #c9bdaa;
 }
 
 .dark body {
@@ -136,11 +237,11 @@ body {
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .dark .card {
-    --color-card: #111a2e;
+    --color-card: #171208;
   }
   .card-hover:hover {
     border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-ink-200));
-    box-shadow: 0 8px 28px -12px rgba(8, 145, 178, 0.22);
+    box-shadow: 0 8px 28px -12px rgba(192, 128, 64, 0.25);
   }
 
   /* Micro-interactions on tappable cards. */
@@ -307,6 +408,174 @@ body {
   }
 }
 
+/* One-shot highlight on the insurance grid when a re-run lands with new
+   figures — makes the auto-refresh visible even when only one card moved.
+   Disabled automatically by the prefers-reduced-motion block below. */
+@keyframes value-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--color-brand-500) 0%, transparent);
+  }
+  35% {
+    background-color: color-mix(in srgb, var(--color-brand-500) 16%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.value-flash {
+  border-radius: 0.75rem;
+  animation: value-flash 900ms ease-out;
+}
+
+/* ---------------------------------------------------------------------------
+   Landing hero — CRT scanlines, glitch headline, terminal, marquee
+   --------------------------------------------------------------------------- */
+
+/* Old-CRT overlay across the black hero.  Static (no animation), so it is
+   invisible to the reduced-motion gate and costs nothing. */
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* RGB-split headline glitch.  Quiet at rest; hovering the headline shears the
+   two ghost layers (cyan / magenta) across a clip-path window.  attr(data-text)
+   keeps the ghosts pixel-identical to the glyphs.  The global
+   prefers-reduced-motion override kills the jitter. */
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  clip-path: inset(100% 0 0 0);
+  pointer-events: none;
+  opacity: 0;
+}
+.glitch::before {
+  color: #f0d090;
+}
+.glitch::after {
+  color: #fe4543;
+}
+.glitch:hover::before,
+.glitch:hover::after {
+  opacity: 1;
+}
+.glitch:hover::before {
+  animation: glitch-top 2.4s infinite linear alternate-reverse;
+}
+.glitch:hover::after {
+  animation: glitch-bottom 2.6s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-top {
+  0%,
+  100% {
+    clip-path: inset(0 0 100% 0);
+  }
+  92% {
+    clip-path: inset(0 0 100% 0);
+  }
+  94% {
+    clip-path: inset(14% 0 78% 0);
+    transform: translateX(-5px);
+  }
+  96% {
+    clip-path: inset(58% 0 34% 0);
+    transform: translateX(4px);
+  }
+  98% {
+    clip-path: inset(32% 0 60% 0);
+    transform: translateX(-2px);
+  }
+}
+@keyframes glitch-bottom {
+  0%,
+  100% {
+    clip-path: inset(100% 0 0 0);
+  }
+  92% {
+    clip-path: inset(100% 0 0 0);
+  }
+  94% {
+    clip-path: inset(72% 0 20% 0);
+    transform: translateX(5px);
+  }
+  96% {
+    clip-path: inset(40% 0 52% 0);
+    transform: translateX(-4px);
+  }
+  98% {
+    clip-path: inset(64% 0 28% 0);
+    transform: translateX(2px);
+  }
+}
+
+/* Mock terminal under the hero — a constant near-black surface in both themes,
+   so its chrome uses fixed white-alpha, not the theme tokens. */
+.terminal {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 9, 12, 0.85);
+  border-radius: 0.6rem;
+  box-shadow: 0 24px 60px -24px rgba(2, 4, 9, 0.8);
+  overflow: hidden;
+}
+.terminal-chrome {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Line-by-line reveal on mount; the stagger comes from inline animation-delay. */
+.term-line {
+  opacity: 0;
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  white-space: pre-wrap;
+}
+
+/* Blinking block caret after the last terminal line. */
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1.1em;
+  margin-top: 0.2em;
+  background: #f0d090;
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Infinite threat ticker.  Two identical tracks are translated by one track
+   width, so the loop is seamless. */
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Moving dashed overlay on the signal readout curve. */
+.dash-flow {
+  animation: dash-flow 2.6s linear infinite;
+}
+
 /* Scroll-reveal helpers — inert until revealed by the IntersectionObserver. */
 .reveal {
   opacity: 0;
@@ -359,21 +628,72 @@ body {
   transition-delay: 630ms;
 }
 
-/* Hero signature — a soft radial glow behind the headline.  Alpha differs
-   per mode so the accent reads on both white and navy. */
+/* Hero signature — a soft amber/red radial glow behind the headline, the two
+   poles of the Armageddon identity (divine gold vs threat fire).  The hero is
+   constant black in both themes, so the glow uses fixed colours. */
 .hero-glow {
-  background: radial-gradient(
-    60% 100% at 50% 0%,
-    color-mix(in srgb, var(--color-accent) 14%, transparent),
-    transparent 70%
-  );
+  background:
+    radial-gradient(70% 90% at 8% 100%, rgba(246, 196, 106, 0.16), transparent 62%),
+    radial-gradient(70% 90% at 92% 100%, rgba(254, 69, 67, 0.18), transparent 62%),
+    radial-gradient(60% 100% at 50% 0%, rgba(232, 164, 74, 0.12), transparent 72%);
 }
-.dark .hero-glow {
-  background: radial-gradient(
-    60% 100% at 50% 0%,
-    color-mix(in srgb, var(--color-accent) 26%, transparent),
-    transparent 72%
-  );
+
+/* Two-tone "CYBER ATTACK" headline — warm cream-to-gold "CYBER" flowing to
+   molten-blood-red "ATTACK", the reference mockups' gold→fire arc.  bg-clip
+   fills the glyphs; the red side keeps a soft threat glow. */
+.cyber-gradient {
+  background: linear-gradient(to bottom, #fffbe8, #f2c06a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.cyber-red {
+  background: linear-gradient(180deg, #ff9a8e, #e43c56 55%, #9e061d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 16px rgba(254, 69, 67, 0.4));
+}
+
+/* Amber scan CTA — the reference mockups' gold pill with dark-warm text. */
+.scan-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1a1208;
+  background: linear-gradient(90deg, #f6c46a, #d9922e);
+  box-shadow:
+    0 0 28px rgba(246, 196, 106, 0.35),
+    0 4px 20px -6px rgba(217, 146, 46, 0.5);
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+.scan-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 40px rgba(246, 196, 106, 0.5),
+    0 6px 24px -6px rgba(217, 146, 46, 0.6);
+}
+
+/* Red threat pill — "THREAT DETECTED / RISK LEVEL CRITICAL". */
+.threat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.4rem 0.9rem;
+  background: linear-gradient(90deg, #e43c56, #fe4543);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 0 22px rgba(254, 69, 67, 0.45);
 }
 
 /* ---------------------------------------------------------------------------

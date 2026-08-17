@@ -41,7 +41,7 @@ def health() -> dict[str, Any]:
     """Liveness probe for the versioned API (auth-exempt)."""
     return {
         "status": "ok",
-        "service": "CyberRisk AI",
+        "service": "Armageddon",
         "version": __version__,
         "api_version": "v1",
     }

@@ -156,3 +156,59 @@ def test_final_text_is_returned_without_tools():
     # The final answer must carry the mandatory model-limitations disclosure.
     assert answer.startswith("A thoughtful consultant reply.")
     assert answer.endswith(disclosure_block())
+
+
+def test_agent_runs_demo_assessment_and_isolates_client_facts():
+    """A demo request fabricates a company and runs the real engine on it —
+    tagged DEMO, with standard metrics — and the demo NEVER mutates the
+    running client facts (session isolation)."""
+    script = [
+        ChatResponse(
+            content="",
+            tool_calls=[_tool_call("generate_demo_assessment", {}, call_id="call_demo")],
+        ),
+        ChatResponse(content="Here is your DEMO assessment. The company is fictional."),
+    ]
+    agent = _make_agent(script)
+
+    answer = agent.chat("Show me a demo of the platform")
+
+    # The demo tool ran with real engine data.
+    assert agent.tool_trace
+    trace = agent.tool_trace[0]
+    assert trace["name"] == "generate_demo_assessment"
+    assert trace["ok"] is True
+    data = trace["data"]
+    assert data["demo"] is True
+    assert "disclaimer" in data and "DEMO" in data["disclaimer"]
+    # Standard metric keys the post-guard validates against.
+    for key in ("eal", "var_99", "es_99", "aal_by_scenario"):
+        assert key in data, key
+    assert "client_retained_loss" in data
+    # Chat-only: no report workbook path.
+    assert "report_path" not in data
+    # Session isolation: the demo call carried only non-brief args (empty
+    # brief merges nothing), so the running client facts are untouched.
+    assert agent.brief.revenue_usd is None
+    assert agent.brief.security_controls is None
+    # The hallucination backstop ran cleanly (no unverifiable-figures caveat).
+    assert "could not be fully verified" not in answer
+
+
+def test_agent_demo_excluded_sector_returns_error_to_model():
+    """Asking for a critical-infrastructure demo returns an error the model
+    can read, instead of fabricating a dangerous profile."""
+    script = [
+        ChatResponse(
+            content="",
+            tool_calls=[
+                _tool_call("generate_demo_assessment", {"sector": "Power"}, call_id="call_demo")
+            ],
+        ),
+        ChatResponse(content="That sector is not available for demos."),
+    ]
+    agent = _make_agent(script)
+    agent.chat("Show me a demo for a power company")
+    data = agent.tool_trace[0]["data"]
+    assert data["status"] == "error"
+    assert "excluded" in data["error"].lower()

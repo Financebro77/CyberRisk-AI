@@ -1,13 +1,11 @@
-import { ShieldCheck } from 'lucide-react';
+import { ArmageddonMark } from './ArmageddonMark';
 
-/** The CyberRisk AI mark — a shield in the brand square. */
+/** The Armageddon brand mark — the gold teardrop emblem from reference (6).png. */
 export function Logo({ size = 32 }: { size?: number }) {
   return (
-    <div
-      className="flex items-center justify-center rounded-lg bg-brand-600 text-white"
-      style={{ width: size, height: size }}
-    >
-      <ShieldCheck style={{ width: size * 0.6, height: size * 0.6 }} />
-    </div>
+    <ArmageddonMark
+      style={{ width: size, height: size * (781 / 860) }}
+      ariaLabel="Armageddon"
+    />
   );
 }

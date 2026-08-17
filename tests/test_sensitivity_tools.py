@@ -197,7 +197,7 @@ def test_system_prompt_only_claims_sensitivity_after_success():
     from cyberrisk.agent.prompts import GROUNDING_REMINDER, SYSTEM_PROMPT
 
     assert "run_control_improvement_scenario" in SYSTEM_PROMPT
-    assert "five tools" in SYSTEM_PROMPT
+    assert "seven tools" in SYSTEM_PROMPT
     # The hard rule: no sensitivity claim until the tool returned ok.
     assert "may only report a control-change impact" in SYSTEM_PROMPT
     assert "never invent the improvement's effect" in SYSTEM_PROMPT.lower()

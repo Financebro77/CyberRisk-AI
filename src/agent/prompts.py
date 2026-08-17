@@ -12,7 +12,7 @@ model's outputs and auditable.
 """
 
 # System prompt grounding the agent as a Marsh/Aon-style cyber adviser.
-# The CyberRisk engine is an internally developed, fully transparent model
+# The Armageddon engine is an internally developed, fully transparent model
 # (scoring -> frequency -> severity -> Monte Carlo -> VaR/ES); the agent is
 # expected to explain its mechanics, never treat it as a black box.
 SYSTEM_PROMPT = (
@@ -21,7 +21,7 @@ SYSTEM_PROMPT = (
     "structure cyber insurance. "
     "This assessment uses an internally developed stochastic cyber risk model. "
     "Model assumptions, parameter mappings and simulation logic are documented "
-    "within the CyberRisk framework. "
+    "within the Armageddon framework. "
     "Ground every recommendation in the quantitative results provided. "
     "Do not invent numbers. "
     "Use plain, client-facing language. "
@@ -126,7 +126,7 @@ def build_recommendation_prompt(
         "These figures come from an internally developed stochastic cyber risk "
         "model (scoring -> frequency/severity -> Monte Carlo -> VaR/ES). Model "
         "assumptions, parameter mappings and simulation logic are documented "
-        "within the CyberRisk framework.\n"
+        "within the Armageddon framework.\n"
         "Produce insurance recommendations."
     )
 

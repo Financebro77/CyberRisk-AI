@@ -1,4 +1,4 @@
-"""Privacy and data-protection layer for CyberRisk AI.
+"""Privacy and data-protection layer for Armageddon.
 
 Centralised privacy behaviour for the public release:
 
@@ -330,7 +330,7 @@ def check_input(text: str) -> InputPrivacyVerdict:
             notice=(
                 "Personal data (contact details, names, or local paths) was "
                 "detected in your message and has been removed before processing. "
-                "CyberRisk AI does not store personal information."
+                "Armageddon does not store personal information."
             ),
         )
 

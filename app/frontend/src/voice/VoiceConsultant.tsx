@@ -90,7 +90,7 @@ export function VoiceConsultant() {
             <ShieldCheck className="h-4.5 w-4.5" />
           </div>
           <div>
-            <div className="text-sm font-semibold leading-tight text-ink-900">CyberRisk AI</div>
+            <div className="text-sm font-semibold leading-tight text-ink-900">Armageddon</div>
             <div className="flex items-center gap-1.5 text-[11px] text-ink-500">
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
@@ -202,7 +202,7 @@ export function VoiceConsultant() {
         <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-ink-400">
           <span className="flex items-center gap-1">
             <Sparkles className="h-3 w-3" />
-            Powered by the CyberRisk engine — no figures are invented.
+            Powered by the Armageddon engine — no figures are invented.
           </span>
           <button
             type="button"

@@ -146,7 +146,7 @@ describe('VoiceConsultant single screen', () => {
   it('renders the title, prompt and microphone button on open (app startup)', async () => {
     installNoSpeech();
     await renderReady();
-    expect(screen.getByText('CyberRisk AI')).toBeInTheDocument();
+    expect(screen.getByText('Armageddon')).toBeInTheDocument();
     expect(
       screen.getByText('How can I help you assess your cyber risk?'),
     ).toBeInTheDocument();
@@ -249,7 +249,7 @@ describe('VoiceConsultant single screen', () => {
     await userEvent.click(screen.getByRole('button', { name: /send message/i }));
     await waitFor(() =>
       expect(
-        screen.getByText('The CyberRisk AI service is currently unavailable. Please try again.'),
+        screen.getByText('The Armageddon service is currently unavailable. Please try again.'),
       ).toBeInTheDocument(),
     );
   });

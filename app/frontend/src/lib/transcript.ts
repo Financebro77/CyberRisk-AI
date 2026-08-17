@@ -7,7 +7,7 @@
  * safety banner.
  */
 
-import type { ChatToolTrace, TranscriptMessage } from './types';
+import type { ChatSession, ChatToolTrace, TranscriptMessage } from './types';
 
 export function transcriptFromTurn(
   history: Array<{ role: string; content: string }>,
@@ -24,4 +24,20 @@ export function transcriptFromTurn(
       safety: isFinalAssistant ? safety : null,
     };
   });
+}
+
+/**
+ * Rebuild a transcript from a RESUMED conversation (SQLite payload).
+ *
+ * Unlike a turn response, every persisted assistant message carries its own
+ * tool trace — so charts re-render for the whole thread, not just the last
+ * message.  Safety banners are per-turn UI state and are not persisted.
+ */
+export function transcriptFromSession(session: ChatSession): TranscriptMessage[] {
+  return session.history.map((m) => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: m.content,
+    toolTrace: m.role === 'assistant' ? (m.tool_trace ?? []) : [],
+    safety: null,
+  }));
 }

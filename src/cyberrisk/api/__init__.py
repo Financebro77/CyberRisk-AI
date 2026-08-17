@@ -1,4 +1,4 @@
-"""CyberRisk AI web API layer.
+"""Armageddon web API layer.
 
 A thin FastAPI layer over the existing tool functions in
 ``cyberrisk.agent.tools`` and ``cyberrisk.agent.sensitivity_tools``.

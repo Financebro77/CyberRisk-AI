@@ -1,4 +1,4 @@
-"""End-to-end validation of the CyberRisk AI mobile architecture.
+"""End-to-end validation of the Armageddon mobile architecture.
 
 Walks the full stack exactly as a mobile client does::
 

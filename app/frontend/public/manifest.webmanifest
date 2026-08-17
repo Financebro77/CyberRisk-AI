@@ -1,13 +1,13 @@
 {
-  "name": "CyberRisk AI",
-  "short_name": "CyberRisk AI",
+  "name": "Armageddon",
+  "short_name": "Armageddon",
   "description": "Voice-first cyber risk consultant. Assess your cyber exposure, understand your loss model and get mitigation recommendations.",
   "start_url": "/voice.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d",
   "icons": [
     {
       "src": "/icon-192.png",

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * Generate the CyberRisk AI PWA icons as PNGs — no image tooling required.
+ * Generate the Armageddon PWA icons as PNGs — no image tooling required.
  *
- * Pure Node (zlib) PNG writer: draws a solid ink-950 (#0b1220) background with
- * a simple blue shield glyph, rasterized manually at the requested size.
+ * Pure Node (zlib) PNG writer: rasterizes the Armageddon brand mark from the
+ * same geometry as src/components/ArmageddonMark.tsx (three silver capsule
+ * drops flowing through a band into a gold teardrop) on a warm near-black
+ * background, at the requested sizes.
  * Outputs:
  *   public/apple-touch-icon.png  (180x180)
  *   public/icon-192.png          (192x192)
@@ -19,10 +21,26 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Design tokens (hex → 0..255).
-const BG = { r: 11, g: 18, b: 32 }; // ink-950
-const SHIELD = { r: 96, g: 165, b: 250 }; // brand-400
-const SHIELD_DARK = { r: 59, g: 130, b: 246 }; // brand-500
+// Design tokens — the Armageddon identity: warm near-black canvas, gold drop.
+const BG = { r: 10, g: 11, b: 13 }; // #0a0b0d ink-50 (dark)
+const DROP_STOPS = [
+  { at: 0.0, c: { r: 0xfe, g: 0xf6, b: 0xd0 } }, // #FEF6D0
+  { at: 0.3, c: { r: 0xf6, g: 0xd6, b: 0x8d } }, // #F6D68D
+  { at: 0.58, c: { r: 0xc3, g: 0x8f, b: 0x50 } }, // #C38F50
+  { at: 0.82, c: { r: 0x6b, g: 0x44, b: 0x23 } }, // #6B4423
+  { at: 1.0, c: { r: 0x1e, g: 0x12, b: 0x04 } }, // #1E1204
+];
+const CAP_STOPS = [
+  { at: 0.0, c: { r: 0xff, g: 0xff, b: 0xff } },
+  { at: 0.2, c: { r: 0xff, g: 0xff, b: 0xff } },
+  { at: 0.3, c: { r: 0xe9, g: 0xe9, b: 0xec } }, // #E9E9EC
+  { at: 1.0, c: { r: 0x61, g: 0x64, b: 0x6b } }, // #61646B
+];
+const BAND_STOPS = [
+  { at: 0.0, c: { r: 0x5d, g: 0x5e, b: 0x63 } }, // #5D5E63
+  { at: 0.62, c: { r: 0x81, g: 0x7f, b: 0x7d } }, // #817F7D
+  { at: 1.0, c: { r: 0xc3, g: 0x8f, b: 0x50 } }, // #C38F50
+];
 
 // --- tiny PNG encoder (RGBA8, zlib-deflated, no interlace) -----------------
 function crc32(buf) {
@@ -62,65 +80,119 @@ function encodePNG(width, height, rgba) {
   ]);
 }
 
-// --- shield glyph rasterization --------------------------------------------
-// A shield is a pentagon: flat top, chamfered shoulders, point at the bottom.
-// We draw it inside a normalized [0,1] box with the given inset, plus a
-// centered "bolt" notch for the shield detail.
-function insideShield(px, py, inset = 0.16) {
-  // normalized center-of-box coordinates
-  const x = px - 0.5;
-  const y = py - 0.5;
-  const s = 0.5 - inset; // half-extent of the shield shape
+// --- Armageddon mark geometry (viewBox 860x781) -----------------------------
+const DROP_BBOX = { x: 386, y: 70, w: 862 - 386, h: 781 - 70 };
 
-  // Shield silhouette (pointing down): top edge at y = -s, sides taper to a
-  // point at (0, +s).
-  const top = -s;
-  const bottom = s;
-  const side = (yy) => s * (1 - (yy - top) / (bottom - top)); // half-width at height yy
-  if (y < top || y > bottom) return false;
-  return Math.abs(x) <= side(y);
-}
-
-function inBolt(px, py) {
-  // Small vertical "energy" tick in the shield's centre (rounded corners via
-  // circle at the bottom). Normalized coords.
-  const x = px - 0.5;
-  let y = py - 0.5;
-  const w = 0.10;
-  const top = -0.16;
-  const bottom = 0.26;
-  if (x < -w || x > w) return false;
-  if (y < top) return false;
-  if (y <= bottom - w) return true; // rectangular stem
-  // rounded cap at the bottom of the tick
-  const dx = Math.abs(x);
-  const dy = y - (bottom - w);
-  return dx * dx + dy * dy <= w * w;
-}
-
-function shade(x, y) {
-  const onShield = insideShield(x, y, 0.14);
-  if (!onShield) return { ...BG, a: 255 };
-  const inTick = inBolt(x, y);
-  // Slight vertical gradient on the shield for depth.
-  const t = Math.max(0, Math.min(1, (y - 0.14) / (0.5 - 0.14)));
-  const col = inTick
-    ? SHIELD_DARK
-    : { r: Math.round(SHIELD.r * 0.92 + 0.08 * 255), g: SHIELD.g, b: SHIELD.b };
-  const mix = (a, b, k) => Math.round(a + (b - a) * k);
-  const base = {
-    r: mix(SHIELD.r, col.r, t * 0.35),
-    g: mix(SHIELD.g, col.g, t * 0.35),
-    b: mix(SHIELD.b, col.b, t * 0.35),
+// Flatten the teardrop's four cubic beziers into a polygon for ray casting.
+const CUBIC = 40; // segments per curve
+function cubicPoint(x0, y0, c1x, c1y, c2x, c2y, x1, y1, t) {
+  const u = 1 - t;
+  return {
+    x:
+      u * u * u * x0 +
+      3 * u * u * t * c1x +
+      3 * u * t * t * c2x +
+      t * t * t * x1,
+    y:
+      u * u * u * y0 +
+      3 * u * u * t * c1y +
+      3 * u * t * t * c2y +
+      t * t * t * y1,
   };
-  return { ...base, a: 255 };
+}
+
+const TEARDROP = (() => {
+  const segs = [
+    [630, 70, 855, 70, 865, 160, 862, 400],
+    [862, 400, 859, 560, 810, 730, 600, 781],
+    [600, 781, 430, 735, 385, 560, 386, 400],
+    [386, 400, 387, 160, 405, 70, 630, 70],
+  ];
+  const poly = [];
+  for (const [x0, y0, c1x, c1y, c2x, c2y, x1, y1] of segs) {
+    for (let i = 0; i < CUBIC; i++) {
+      const p = cubicPoint(x0, y0, c1x, c1y, c2x, c2y, x1, y1, i / CUBIC);
+      poly.push(p);
+    }
+  }
+  return poly;
+})();
+
+function inPolygon(poly, X, Y) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a.y > Y !== b.y > Y && X < ((b.x - a.x) * (Y - a.y)) / (b.y - a.y) + a.x) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function inRoundedRect(X, Y, x0, y0, w, h, r) {
+  const cx = Math.min(Math.max(X, x0 + r), x0 + w - r);
+  const cy = Math.min(Math.max(Y, y0 + r), y0 + h - r);
+  return (X - cx) * (X - cx) + (Y - cy) * (Y - cy) <= r * r;
+}
+
+const CAPSULES = [
+  { x0: 5, y0: 0, w: 52, h: 150, r: 26 },
+  { x0: 154, y0: 0, w: 52, h: 150, r: 26 },
+  { x0: 299, y0: 0, w: 52, h: 150, r: 26 },
+];
+const BAND = { x0: -10, y0: 94, w: 510, h: 56 };
+
+function stopColor(stops, k) {
+  k = Math.max(0, Math.min(1, k));
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+    if (k >= a.at && k <= b.at) {
+      const t = (k - a.at) / (b.at - a.at);
+      return {
+        r: Math.round(a.c.r + (b.c.r - a.c.r) * t),
+        g: Math.round(a.c.g + (b.c.g - a.c.g) * t),
+        b: Math.round(a.c.b + (b.c.b - a.c.b) * t),
+      };
+    }
+  }
+  return stops[stops.length - 1].c;
+}
+
+function shade(X, Y) {
+  // Drop gradient: radial in bbox space (cx=0.62, cy=0.34, r=0.8).
+  if (inPolygon(TEARDROP, X, Y)) {
+    const nx = (X - DROP_BBOX.x) / DROP_BBOX.w;
+    const ny = (Y - DROP_BBOX.y) / DROP_BBOX.h;
+    const d = Math.hypot((nx - 0.62) / 0.8, (ny - 0.34) / 0.8);
+    return { ...stopColor(DROP_STOPS, d), a: 255 };
+  }
+  // Band (drawn under the capsules).
+  if (
+    X >= BAND.x0 &&
+    X <= BAND.x0 + BAND.w &&
+    Y >= BAND.y0 &&
+    Y <= BAND.y0 + BAND.h
+  ) {
+    const k = (X - BAND.x0) / BAND.w;
+    return { ...stopColor(BAND_STOPS, k), a: 255 };
+  }
+  // Three capsule drops.
+  for (const cap of CAPSULES) {
+    if (inRoundedRect(X, Y, cap.x0, cap.y0, cap.w, cap.h, cap.r)) {
+      const k = (Y - cap.y0) / cap.h;
+      return { ...stopColor(CAP_STOPS, k), a: 255 };
+    }
+  }
+  return { ...BG, a: 255 };
 }
 
 function rasterize(size) {
   const rgba = Buffer.alloc(size * size * 4);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const p = shade((x + 0.5) / size, (y + 0.5) / size);
+      const p = shade(((x + 0.5) / size) * 860, ((y + 0.5) / size) * 781);
       const i = (y * size + x) * 4;
       rgba[i] = p.r;
       rgba[i + 1] = p.g;

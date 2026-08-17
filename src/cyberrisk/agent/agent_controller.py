@@ -33,6 +33,7 @@ from cyberrisk.agent.tools import (
     TOOL_SCHEMAS,
     analyse_insurance_structure,
     assess_company_risk,
+    generate_demo_assessment,
     generate_risk_report,
     run_loss_simulation,
     search_incidents,
@@ -73,6 +74,13 @@ _TOOL_IMPLEMENTATIONS = {
         attack_type=extra.get("attack_type"),
         company=extra.get("company"),
         limit=extra.get("limit"),
+    ),
+    # Demo fabrication: takes only non-brief knobs (sector / n_years) so it
+    # never mutates the running client facts -- a demo run is session-isolated
+    # and a follow-up about the real company returns to the real profile.
+    "generate_demo_assessment": lambda brief, extra: generate_demo_assessment(
+        sector=extra.get("sector"),
+        n_years=extra.get("n_years"),
     ),
 }
 
@@ -122,16 +130,20 @@ class CyberRiskAgent:
         """
         if not self.memory.get() or self.memory.get()[0].get("role") != "system":
             methodology = explain_model_mechanics().full_text()
-            self.memory.append(
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                    + "\n\n"
-                    + SENIOR_CONSULTANT_DIRECTIVES
-                    + "\n\n"
-                    + methodology,
-                }
-            )
+            system_message = {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+                + "\n\n"
+                + SENIOR_CONSULTANT_DIRECTIVES
+                + "\n\n"
+                + methodology,
+            }
+            # System message belongs FIRST: the tool loop reads
+            # ``memory[0]`` as the base system prompt and the per-turn RAG
+            # injection is insert(0)/pop(0) around it.  A restored session
+            # (memory seeded from persisted user/assistant rows) must get the
+            # system prompt at the front, not appended to the tail.
+            self.memory.messages.insert(0, system_message)
 
     # ------------------------------------------------------------------
     # RAG context injection

@@ -1,4 +1,4 @@
-"""API authentication and rate limiting for the CyberRisk web layer.
+"""API authentication and rate limiting for the Armageddon web layer.
 
 Both features are **opt-in via environment variables**, so the default local
 dev experience is unchanged (no key, no limit), while a production deployment

@@ -306,3 +306,20 @@ export interface ChatTurnResponse {
   safety: { class_name: string; response: string } | null;
   model: string;
 }
+
+/** One persisted message row in a chat-session payload. */
+export interface ChatHistoryMessage {
+  role: string;
+  content: string;
+  /** The tool trace for THIS message (charts re-render on resume). */
+  tool_trace: ChatToolTrace[] | null;
+}
+
+/** A persisted conversation (GET /chat/sessions/{id} and the bulk list). */
+export interface ChatSession {
+  session_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  history: ChatHistoryMessage[];
+}

@@ -17,7 +17,7 @@ from cyberrisk.agent.model_mechanics import ModelMechanics, explain_model_mechan
 WHITEBOX_STATEMENT = (
     "This assessment uses an internally developed stochastic cyber risk model. "
     "Model assumptions, parameter mappings and simulation logic are documented "
-    "within the CyberRisk framework."
+    "within the Armageddon framework."
 )
 
 

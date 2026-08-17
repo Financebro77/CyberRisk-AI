@@ -1,4 +1,4 @@
-"""LLM provider abstraction for the CyberRisk AI consultant.
+"""LLM provider abstraction for the Armageddon consultant.
 
 Defines the provider-agnostic interface the agent talks to, plus the shared
 types and helpers every concrete provider reuses:
@@ -67,7 +67,7 @@ class ChatResponse:
 
 
 class LLMClient(ABC):
-    """Provider-agnostic interface for the CyberRisk AI consultant.
+    """Provider-agnostic interface for the Armageddon consultant.
 
     ``chat`` is the primary tool-calling surface the agent loop uses.  The
     three convenience methods wrap it for simpler callers:

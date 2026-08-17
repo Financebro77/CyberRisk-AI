@@ -1,4 +1,4 @@
-"""FastAPI entrypoint for the CyberRisk AI web platform.
+"""FastAPI entrypoint for the Armageddon web platform.
 
 Run (dev):
     cd /path/to/project
@@ -42,7 +42,7 @@ except ImportError:  # pragma: no cover - privacy module always present
     pass
 
 app = FastAPI(
-    title="CyberRisk AI",
+    title="Armageddon",
     description="Marsh/Aon-style commercial cyber risk assessment, loss modelling and insurance structuring.",
     version=__version__,
 )
@@ -100,7 +100,7 @@ def index() -> FileResponse | dict:
     if (FRONTEND_DIST / "index.html").exists():
         return FileResponse(FRONTEND_DIST / "index.html")
     return {
-        "service": "CyberRisk AI",
+        "service": "Armageddon",
         "docs": "/docs",
         "note": "Frontend not built yet. Run the Vite dev server in app/frontend, or npm run build first.",
     }
